@@ -44,7 +44,9 @@ if (!checkRequiredFiles([paths.appHtml, paths.appIndexJs])) {
 }
 
 // Tools like Cloud9 rely on this.
+// 端口更改
 const DEFAULT_PORT = parseInt(process.env.PORT, 10) || 3000;
+// 域名更改
 const HOST = process.env.HOST || '0.0.0.0';
 
 if (process.env.HOST) {
