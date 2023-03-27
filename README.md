@@ -3,7 +3,7 @@
  * @Author: zcc
  * @LastEditors: zcc
  * @Date: 2023-02-14 10:06:25
- * @LastEditTime: 2023-03-27 11:11:00
+ * @LastEditTime: 2023-03-27 10:28:54
 -->
 
 # Getting Started with Create React App
@@ -441,21 +441,21 @@
   ```mermaid
       graph
 
-      父组件第一次渲染 --> 父 willMount
-      父 willMount --> 父 render
-      父 render --> 子 willMount
-      子 willMount --> 子 render
-      子 render --> 子 didMount
-      子 didMount --> 父 didMount
+      父组件第一次渲染 --> 父willMount
+      父willMount --> 父render
+      父render --> 子willMount
+      子willMount --> 子render
+      子render --> 子didMount
+      子didMount --> 父didMount
 
-      父组件更新 --> 父 shouldUpdate
-      父 shouldUpdate --> 父 willUpdate
-      父 willUpdate --> 父 render
-      父 render --> 子 shouldUpdate
-      子 shouldUpdate --> 子 willUpdate
-      子 willUpdate --> 子 render
-      子 render --> 子 didUpdate
-      子 didUpdate --> 父 didUpdate
+      父组件更新 --> 父shouldUpdate
+      父shouldUpdate --> 父willUpdate
+      父willUpdate --> 父render
+      父render --> 子shouldUpdate
+      子shouldUpdate --> 子willUpdate
+      子willUpdate --> 子render
+      子render --> 子didUpdate
+      子didUpdate --> 父didUpdate
 
   ```
 #### 组件销毁
