@@ -3,7 +3,7 @@
  * @Author: zcc
  * @LastEditors: zcc
  * @Date: 2023-02-14 10:06:25
- * @LastEditTime: 2023-03-27 10:28:54
+ * @LastEditTime: 2023-03-27 16:52:04
 -->
 
 # Getting Started with Create React App
@@ -308,7 +308,7 @@
 
 ### 类组件
 
-- 类 tips
+#### 类 tips
 
   ```jsx
   class Parent{
@@ -338,7 +338,38 @@
   let p = new Parent(10,20)
   ```
 
-- 创建类组件
+
+
+#### setState 
+this.setState([partialstate], [callback])
+- [partialstate] :支持部分状态更改
+  ```jsx
+  this. setState(
+    ×：100 //不论总共有多少状态，我们只修改了x，其余的状态不动
+  ) :
+  ```
+- [callback]：在状态更改/视图更新完毕后触发执行「也可以说只要执行了setstate, callback一定会执行」
+  - 发生在componentDidUpdate周期函数之后 「Didupdate会在任何状态更改后都触发执行；而回调函数方式，可以在指定状态更新后处理-些事情；』
+  - 特殊：即便我们基于shouldComponentupdate阻止了状态/视图的更新，Didupdate周期函数肯定不会执行了，但是我们设置的这个callback回调函数依然会被触发执行！
+  - 类似于Vue中的$nextTick
+
+##### setState底层处理机制
+- 在react18中，setState在任何地方执行都是异步操作
+- 原因
+  - r18有一套更新队列的机制
+  - 基于异步操作，实现状态的“批处理”
+- 好处
+  - 减少视图更新次数，降低渲染消耗的性能
+  - 让更新的逻辑和流程清晰稳健
+- 处理机制
+  - 在产生的私有上下文中，代码自上而下执行
+    1. 会把所有的setstate 操作，先加入到更新队列「只对当前上下文，** 同步 ** 要做的事情做处理」
+    2. 当上下文中的代码都处理完毕后，会让更新队列中的任务，统一渲染/ 更新一次「批处理」
+  - 把当前相同时间段内【浏览器此时可以处理的事情中】，遇到setState会立即放入到更新队列中
+
+- flushSync 刷新队列
+
+#### 创建类组件
   - 创建一个构造函数（类）
     - 要求必须继承 React.Component/PureComponent 这个类
     - 我们习惯于使用 es5 中的 class 创建类【因为方便】
@@ -442,19 +473,19 @@
       graph
 
       父组件第一次渲染 --> 父willMount
-      父willMount --> 父render
-      父render --> 子willMount
-      子willMount --> 子render
-      子render --> 子didMount
+      父willMount --> 父render1
+      父render1 --> 子willMount
+      子willMount --> 子render1
+      子render1 --> 子didMount
       子didMount --> 父didMount
 
       父组件更新 --> 父shouldUpdate
       父shouldUpdate --> 父willUpdate
-      父willUpdate --> 父render
-      父render --> 子shouldUpdate
+      父willUpdate --> 父render2
+      父render2 --> 子shouldUpdate
       子shouldUpdate --> 子willUpdate
-      子willUpdate --> 子render
-      子render --> 子didUpdate
+      子willUpdate --> 子render2
+      子render2 --> 子didUpdate
       子didUpdate --> 父didUpdate
 
   ```
@@ -463,11 +494,11 @@
 2. 销毁
 
 ### 静态组件与动态组件
-> - 函数组件是“静态组件"：
+> 函数组件是“静态组件"：
 >   - 组件第一次渲染完毕后，无法基于“内部的某些操作”让组件更新「无法实现“自更新”」；但是，如果调用它的父组件更新了，那么相关的子组件也-定会更新「可能传递最新的属性值进来」；
 >   - 函数组件只具备属性，所以无法实现自更新
 >   - 函数组件优势：比类组件的机制简单，渲染速度快
-> - 类组件是“动态组件”：
+> 类组件是“动态组件”：
 >   - 组件在第一渲染完毕后，除了父组件更新可以触发其更新外，我们还可以通过：this.setstate修改状态 或者 this.forceupdate 等方式.让组件实现“自重新"！
 >   - 类组件具备：属性、状态、周期函数、ref... 「几平组件应该有的东西它都具备」
 >   - 优势：功能强大
@@ -606,6 +637,68 @@ const Demo = function Demo(props) {
     - x是函数的形参：存储的就是当前DOM元素
     - 然后我们获取的DOM元素“x"直接挂在到实例的某个属性上（例如：box2）
     - 获取：this.xxx
+3. 基于React.createRef()方法创建一个REF对象
+  - this.xxx=React.createRef(); //=> this.xxx={current:null}
+  - ref={REF对象(this.xxx)}
+  - 获取：this.xxx.current
 > 原理：在render渲染的时候，会获取virtualDOM的ref属性
->  - 如果属性值是一个字符串，则会给this.refs增加这样的一个成员，成员值就是当前的DOM元素
->  - 如果属性值是一个西数，则会把西数执行，把当前DOM元素传递给这个西数「x->DOM元素」，而在西数执行的内部，我们一般都会把DOM元素直接挂在到实例的某个属性上
+>- 如果属性值是一个字符串，则会给this.refs增加这样的一个成员，成员值就是当前的DOM元素
+>- 如果属性值是一个西数，则会把西数执行，把当前DOM元素传递给这个西数「x->DOM元素」，而在西数执行的内部，我们一般都会把DOM元素直接挂在到实例的某个属性上
+>- 如果属性值是一个REF对象，则会把DOM元素赋值给对象的current属性
+
+#### 设置ref，目的
+
+- 元素标签：获取对应的DOM元素
+- 类组件：获取当前组件的实例对象
+  - 后续可以根据实例，获取子组件中的相关信息
+- 函数组件设置ref，** 报错 ** ：Function components cannot be given refs. Attempts to access this ref will fail.
+  - 但是我们让其配合 React. forwardRef 实现ref的转发
+  - 目的：获取函数组件内部的某个元素
+  ```jsx
+  const Child2 = React.forwardRef(function Child(props, ref) {
+  // console. log(ref);//我们调用child2的时候，设置ref属性值[函数]
+  // -> x=> this.child2 = x
+  return <div>
+      <button ref={ref}>按钮</button>
+  </div>
+  })
+  ```
+## 合成事件
+  解决浏览器的兼容性：onXxxx={函数}
+- bind在React事件绑定的中运用
+  - 绑定的方法是一个普通西数，需要改变西数中的this是实例，此时需要用到bind「一般都是绑定箭头函数」
+  - 想给函数传递指定的实参，可以基于bind预先处理 「bind会把事件对象以最后一个实参传递给函数」
+### react中合成事件的处理原理
+- “绝对不是”给当前元素基于addEventListener单独做的事件鄉定，React中的合成事件，都是基于“事件委托”处理的！
+  - 在React17及以后版本，都是委托给＃root这个容器「捕获和冒泡都做了委托」；
+  - 在17版本以前，都是为委托给document容器的「而且只做了冒泡阶段的委托」；
+  - 对于没有实现事件传播机制的事件，才是单独做的事件鄉定「例如：onMouseEnter/onMouseLeave...」
+- 在组件渲染的时候，如果发现JSX元素属性中有 onxxx/onxxxCapture 这样的属性，不会给当前元素直接做事件绑定，只是把绑定的方法赋值给元素的相关属性！！例如：
+  - outer.onclick=(）=>{console. log('outer 冒泡「合成」，）;了 //这不是DOMO级事件鄉定「这样的才是 outer.onclick
+  - outer.onclickcapture=(）= {console. log ('outer 捕获「合成」，）;}
+  - inner.onclick=()=>{console. 1og ('inner 冒泡「合成」，);}
+  - inner.onclickcapture=()=>{console . log("inner 捕获「合成」，）;}
+- 然后对＃root这个容器做了事件绑定「捕获和胃泡都做了」
+  - 原因：因为组件中所渲染的内容，最后都会插入到＃root容器中，这样点击页面中任何一个元素，最后都会把＃root的点击行为触发！！
+  - 而在给＃root绑定的方法中，把之前给元素设置的onxxx/onxxxCapture属性，在相应的阶段执行！！
+
+  ```jsx
+  //给#root做事件绑定
+  root.addEventListener( 'click', (ev) => {
+    let path = ev.path; // path：[事件源->...->window】所有祖先元素
+    [...path].reverse().forEach(ele=>{
+      let handle = ele.onClickCapture;
+      if (handle) handle():
+    }):
+  }, true);
+  // 冒泡阶段
+  root.addEventListener('click', (ev) =>{
+    let path = ev.path;
+    path. forEach(ele=>{
+      let handle = ele.onClick;
+      if (handle) handle();
+    }) :
+  }, false);
+  ```
+
+  
