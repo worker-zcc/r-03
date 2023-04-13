@@ -3,7 +3,7 @@
  * @Author: zcc
  * @LastEditors: zcc
  * @Date: 2023-02-14 10:06:25
- * @LastEditTime: 2023-03-27 16:52:04
+ * @LastEditTime: 2023-04-13 10:15:04
 -->
 
 # Getting Started with Create React App
@@ -74,7 +74,6 @@
 ### 数组 tips
 
 - 稀疏数组：创建长度为 N 的数组，其每一项都是 empty
-
   - new Array(5)
   - 稀疏数组不可循环
   - 基于数组的 fill 方法进行数据填充，把稀疏数组变为密集数组
@@ -108,7 +107,6 @@
   - 能修改，不能新增，不能删除, 不能劫持（Object.defineProperty()）
   - 判断是否密封 Object.isSeal(obj) => flase/true
 - 不可扩展 Object.preventExtensions()
-
   - 除了不能新增，其他操作都可以
   - 判断是否可扩展 Object.isExtensible(obj) => flase/true
 
@@ -338,22 +336,25 @@
   let p = new Parent(10,20)
   ```
 
-
-
 #### setState 
-this.setState([partialstate], [callback])
+
+> this.setState([partialstate], [callback])
+
 - [partialstate] :支持部分状态更改
+
   ```jsx
   this. setState(
     ×：100 //不论总共有多少状态，我们只修改了x，其余的状态不动
   ) :
   ```
+
 - [callback]：在状态更改/视图更新完毕后触发执行「也可以说只要执行了setstate, callback一定会执行」
   - 发生在componentDidUpdate周期函数之后 「Didupdate会在任何状态更改后都触发执行；而回调函数方式，可以在指定状态更新后处理-些事情；』
   - 特殊：即便我们基于shouldComponentupdate阻止了状态/视图的更新，Didupdate周期函数肯定不会执行了，但是我们设置的这个callback回调函数依然会被触发执行！
   - 类似于Vue中的$nextTick
 
 ##### setState底层处理机制
+
 - 在react18中，setState在任何地方执行都是异步操作
 - 原因
   - r18有一套更新队列的机制
@@ -370,68 +371,70 @@ this.setState([partialstate], [callback])
 - flushSync 刷新队列
 
 #### 创建类组件
-  - 创建一个构造函数（类）
-    - 要求必须继承 React.Component/PureComponent 这个类
-    - 我们习惯于使用 es5 中的 class 创建类【因为方便】
-    - 必须给当前类设置一个 render 方法[放在其原型上]：在 render 方法中，返回需要渲染的视图
+
+- 创建一个构造函数（类）
+  - 要求必须继承 React.Component/PureComponent 这个类
+  - 我们习惯于使用 es5 中的 class 创建类【因为方便】
+  - 必须给当前类设置一个 render 方法[放在其原型上]：在 render 方法中，返回需要渲染的视图
 
 #### 第一次渲染逻辑
 
 > 从调用类组件[new Vote({...})]开始，类组件内部发生的事情
 
-1. 初始化属性&&校验规则
+  1. 初始化属性&&校验规则
 
-   - 方案一
+     - 方案一
 
-   ```javascript
-   constructor(props){
-     super(props) // 会把传递进来的属性挂载到this实例上
-     console.log(this.props) // 获取传递的属性
-   }
-   ```
+      ``` javascript
+      constructor(props){
+        super(props) // 会把传递进来的属性挂载到this实例上
+        console.log(this.props) // 获取传递的属性
+      }
+      ```
 
-   - 方案二：即使我们不在 constructor 中处理[或者不写 constructor]，在 constructor 处理完毕后，React 内部也会把传递的 props 挂载到实例上：所以在其他函数中，只要保证 this 是实例，就可以基于 this.props 获取到传递的属性
-     - 同样 this.props 获取属性对象也是被冻结的{只读}：Object.isFrozen(this.props)->true
-
-2. 初始化状态
-   - 状态：后期修改状态，可以触发视图更新
-   - 需要手动初始化，如果我们没有去做相关处理，则默认会往实例上挂载一个 state，初始值是 null => this.state = null
-   - 修改状态，控制试图更新
-     - this.state.xxx = xxx 这种方法无法让视图更新
-     - 需要根据 React.Component.proptotype 提供的方法操作：
-       1. this.setState(partialState) 既可以修改状态，也可以让视图更新
-          - partialState 部分是状态 this.setState({xxx:xxx})
-       2. this.forceUpdate() 强制更新（不推荐）
-3. 触发 componentWillMount 周期函数（钩子函数）：组件第一次渲染之前
-   - 钩子函数：在程序运行到某个阶段，提供的处理函数，让开发者在这个阶段做一些自定义的事情
-     - componentWillMount 这个周期函数：目前可以使用，但是未来要被移除了，所以不建议使用[浏览器控制台会进行 warning 警告]-可以使用 UNSAFE_componentWillMount 消除警告
-     - 如果开启了 React.StrictMode[React 严格模式]：即使使用 UNSAFE_componentWillMount 也会抛出红色错误警告
-       - React.StrictMode[React 严格模式]：会检查 React 中的不规范语法，或者是一些不建议使用的 api 等
-       - "use strict":JS 严格模式
-4. 触发 render 周期函数：渲染
-5. 触发 componentDidMount 周期函数：第一次渲染完毕
-   - 可以获取真实 DOM ：已经把 virtualDOM 转变为真实 DOM 了
+     - 方案二：即使我们不在constructor中处理[或者不写constructor]，在constructor处理完毕后，React内部也会把传递的props挂载到实例上：所以在其他函数中，只要保证this是实例，就可以基于this.props获取到传递的属性
+       - 同样this.props获取属性对象也是被冻结的{只读}：Object.isFrozen(this.props)->true
+  2. 初始化状态
+     - 状态：后期修改状态，可以触发视图更新
+     - 需要手动初始化，如果我们没有去做相关处理，则默认会往实例上挂载一个state，初始值是null => this.state = null
+     - 修改状态，控制试图更新
+       - this.state.xxx = xxx 这种方法无法让视图更新
+       - 需要根据React.Component.proptotype提供的方法操作：
+          1. this.setState(partialState) 既可以修改状态，也可以让视图更新
+             - partialState 部分是状态 this.setState({xxx:xxx})
+          2. this.forceUpdate() 强制更新（不推荐）
+  3. 触发 componentWillMount 周期函数（钩子函数）：组件第一次渲染之前
+     - 钩子函数：在程序运行到某个阶段，提供的处理函数，让开发者在这个阶段做一些自定义的事情
+       - componentWillMount这个周期函数：目前可以使用，但是未来要被移除了，所以不建议使用[浏览器控制台会进行warning警告]-可以使用UNSAFE_componentWillMount消除警告
+       - 如果开启了React.StrictMode[React严格模式]：即使使用UNSAFE_componentWillMount也会抛出红色错误警告
+         - React.StrictMode[React严格模式]：会检查React中的不规范语法，或者是一些不建议使用的api等
+         - "use strict":JS严格模式
+  4. 触发 render 周期函数：渲染
+  5. 触发 componentDidMount 周期函数：第一次渲染完毕
+     - 可以获取真实DOM ：已经把virtualDOM转变为真实DOM了
 
 ##### 第一次渲染 流程图
 
-```mermaid
-    graph
+  ```mermaid
+      graph
 
-    start --> getDefaultProps
-    getDefaultProps --> getInitialState
-    getInitialState --> componentWillMount
-    componentWillMount --> render
-    render --> componentDidMount
+      start --> getDefaultProps
+      getDefaultProps --> getInitialState
+      getInitialState --> componentWillMount
+      componentWillMount --> render
+      render --> componentDidMount
 
-    开始 --> 初始化props
-    初始化props --> 初始化state
-    初始化state --> 第一次渲染之前
-    第一次渲染之前 --> 第一次渲染
-    第一次渲染 --> 第一次渲染完毕
+      开始 --> 初始化props
+      初始化props --> 初始化state
+      初始化state --> 第一次渲染之前
+      第一次渲染之前 --> 第一次渲染
+      第一次渲染 --> 第一次渲染完毕
 
-```
+  ```
+
 #### 组件更新
-##### 组件更新逻辑[组件内部更改]
+
+#### 组件更新逻辑[组件内部更改]
 
 1. 触发 shouldComponentUpdate 是否允许更新
 
@@ -489,22 +492,26 @@ this.setState([partialstate], [callback])
       子didUpdate --> 父didUpdate
 
   ```
+
 #### 组件销毁
+
 1. 触发componentWillUnmount周期函数：组件销毁之前
 2. 销毁
 
 ### 静态组件与动态组件
-> 函数组件是“静态组件"：
->   - 组件第一次渲染完毕后，无法基于“内部的某些操作”让组件更新「无法实现“自更新”」；但是，如果调用它的父组件更新了，那么相关的子组件也-定会更新「可能传递最新的属性值进来」；
->   - 函数组件只具备属性，所以无法实现自更新
->   - 函数组件优势：比类组件的机制简单，渲染速度快
-> 类组件是“动态组件”：
->   - 组件在第一渲染完毕后，除了父组件更新可以触发其更新外，我们还可以通过：this.setstate修改状态 或者 this.forceupdate 等方式.让组件实现“自重新"！
->   - 类组件具备：属性、状态、周期函数、ref... 「几平组件应该有的东西它都具备」
->   - 优势：功能强大
-> - hooks组件：具备了函数组件和类组件的各自优势，在函数组件的基础上，基于hooks函数，让函数组件也可以拥有状态，周期函数等，让函数组件也可以实现自更新
+
+- 函数组件是“静态组件"：
+  - 组件第一次渲染完毕后，无法基于“内部的某些操作”让组件更新「无法实现“自更新”」；但是，如果调用它的父组件更新了，那么相关的子组件也-定会更新「可能传递最新的属性值进来」；
+  - 函数组件只具备属性，所以无法实现自更新
+  - 函数组件优势：比类组件的机制简单，渲染速度快
+- 类组件是“动态组件”：
+  - 组件在第一渲染完毕后，除了父组件更新可以触发其更新外，我们还可以通过：this.setstate修改状态 或者 this.forceupdate 等方式.让组件实现“自重新"！
+  - 类组件具备：属性、状态、周期函数、ref... 「几平组件应该有的东西它都具备」
+  - 优势：功能强大
+- hooks组件：具备了函数组件和类组件的各自优势，在函数组件的基础上，基于hooks函数，让函数组件也可以拥有状态，周期函数等，让函数组件也可以实现自更新
 
 ### PureComponent和Component的区别：
+
 - PureComponent会给类组件默认加一个shouldComponentupdate周期函数
   - 在此周期函数中，它对新老的属性/状态 会做一个钱浅比较
   - 如果经过浅比较，发现属性和状态井没有改变，则返回false 「也就是不继续更新组建」；有变化才会去更新！！
@@ -550,12 +557,12 @@ const shalldowEqual = (objA, objB) => {
 
 1. 封装组件时，预留插槽位置
 
-```jsx
-const Demo = function Demo(props) {
-  let { children } = props;
-  return <div>{children}</div>;
-};
-```
+  ```jsx
+  const Demo = function Demo(props) {
+    let { children } = props;
+    return <div>{children}</div>;
+  };
+  ```
 
 2. 多个插槽
 
@@ -621,14 +628,18 @@ const Demo = function Demo(props) {
   - 构造函数：把构造函数基于 new 执行[也就是创建类的一个实例]，也会把解析出来的 props 传递过去
     - 每调用一次类组件都会创建一个单独的实例
     - 把类组件中编写的 render 函数执行，把返回的 jsx[virtualDOM]当作组件视图进行渲染！！
+
 ## DOM相关
 
 - componentDidMount :第一次渲染完毕[virtualDOM已经变为真实DOM]：此时我们可以获取所需操作的DOM元素
+
 ### 受控组件与非受控组件
+
 - 受控组件：基于修改数据/状态，让视图更新，达到需要效果
 - 非受控组件：基于ref获取DOM元素，我们操作DOM元素，来实现需求和效果
 
 ### 基于ref获取DOM元素的语法
+
 1. 给需要获取的元素设置ref=’xxx’，后期基于this.refs.xxx去获取相应的DOM元素「不推荐使用」
   - <h2 ref="titleBox">...</h2> 
   - 获取：this.refs.titleBox
@@ -651,9 +662,10 @@ const Demo = function Demo(props) {
 - 元素标签：获取对应的DOM元素
 - 类组件：获取当前组件的实例对象
   - 后续可以根据实例，获取子组件中的相关信息
-- 函数组件设置ref，** 报错 ** ：Function components cannot be given refs. Attempts to access this ref will fail.
+- 函数组件设置ref，**报错** ：Function components cannot be given refs. Attempts to access this ref will fail.
   - 但是我们让其配合 React. forwardRef 实现ref的转发
   - 目的：获取函数组件内部的某个元素
+
   ```jsx
   const Child2 = React.forwardRef(function Child(props, ref) {
   // console. log(ref);//我们调用child2的时候，设置ref属性值[函数]
@@ -663,12 +675,17 @@ const Demo = function Demo(props) {
   </div>
   })
   ```
+
 ## 合成事件
+
   解决浏览器的兼容性：onXxxx={函数}
+
 - bind在React事件绑定的中运用
   - 绑定的方法是一个普通西数，需要改变西数中的this是实例，此时需要用到bind「一般都是绑定箭头函数」
   - 想给函数传递指定的实参，可以基于bind预先处理 「bind会把事件对象以最后一个实参传递给函数」
+
 ### react中合成事件的处理原理
+
 - “绝对不是”给当前元素基于addEventListener单独做的事件鄉定，React中的合成事件，都是基于“事件委托”处理的！
   - 在React17及以后版本，都是委托给＃root这个容器「捕获和冒泡都做了委托」；
   - 在17版本以前，都是为委托给document容器的「而且只做了冒泡阶段的委托」；
@@ -700,5 +717,3 @@ const Demo = function Demo(props) {
     }) :
   }, false);
   ```
-
-  

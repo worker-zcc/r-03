@@ -6,6 +6,9 @@
  * @LastEditTime: 2023-02-22 10:14:18
  */
 
+import { render } from "@testing-library/react";
+import React from "react";
+
 // 封装对象迭代方法
 export function objIteration(obj, callback) {
   if (obj === null || typeof obj !== "object")
@@ -36,3 +39,4 @@ export function createElement(ele, props, ...children) {
   if (len > 1) virtualDOM.props.children = children;
   return virtualDOM;
 }
+
