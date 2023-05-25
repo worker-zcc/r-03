@@ -3,7 +3,7 @@
  * @Author: zcc
  * @LastEditors: zcc
  * @Date: 2023-02-14 10:06:25
- * @LastEditTime: 2023-05-25 22:10:01
+ * @LastEditTime: 2023-05-25 22:12:20
 -->
 
 # Getting Started with Create React App
@@ -74,7 +74,6 @@
 ### 数组 tips
 
 - 稀疏数组：创建长度为 N 的数组，其每一项都是 empty
-
   - new Array(5)
   - 稀疏数组不可循环
   - 基于数组的 fill 方法进行数据填充，把稀疏数组变为密集数组
@@ -108,7 +107,6 @@
   - 能修改，不能新增，不能删除, 不能劫持（Object.defineProperty()）
   - 判断是否密封 Object.isSeal(obj) => flase/true
 - 不可扩展 Object.preventExtensions()
-
   - 除了不能新增，其他操作都可以
   - 判断是否可扩展 Object.isExtensible(obj) => flase/true
 
@@ -389,57 +387,57 @@ this.setState([partialstate], [callback])
 
 > 从调用类组件[new Vote({...})]开始，类组件内部发生的事情
 
-1. 初始化属性&&校验规则
+  1. 初始化属性&&校验规则
 
-   - 方案一
+     - 方案一
 
-   ```javascript
-   constructor(props){
-     super(props) // 会把传递进来的属性挂载到this实例上
-     console.log(this.props) // 获取传递的属性
-   }
-   ```
+      ``` javascript
+      constructor(props){
+        super(props) // 会把传递进来的属性挂载到this实例上
+        console.log(this.props) // 获取传递的属性
+      }
+      ```
 
-   - 方案二：即使我们不在 constructor 中处理[或者不写 constructor]，在 constructor 处理完毕后，React 内部也会把传递的 props 挂载到实例上：所以在其他函数中，只要保证 this 是实例，就可以基于 this.props 获取到传递的属性
-     - 同样 this.props 获取属性对象也是被冻结的{只读}：Object.isFrozen(this.props)->true
-
-2. 初始化状态
-   - 状态：后期修改状态，可以触发视图更新
-   - 需要手动初始化，如果我们没有去做相关处理，则默认会往实例上挂载一个 state，初始值是 null => this.state = null
-   - 修改状态，控制试图更新
-     - this.state.xxx = xxx 这种方法无法让视图更新
-     - 需要根据 React.Component.proptotype 提供的方法操作：
-       1. this.setState(partialState) 既可以修改状态，也可以让视图更新
-          - partialState 部分是状态 this.setState({xxx:xxx})
-       2. this.forceUpdate() 强制更新（不推荐）
-3. 触发 componentWillMount 周期函数（钩子函数）：组件第一次渲染之前
-   - 钩子函数：在程序运行到某个阶段，提供的处理函数，让开发者在这个阶段做一些自定义的事情
-     - componentWillMount 这个周期函数：目前可以使用，但是未来要被移除了，所以不建议使用[浏览器控制台会进行 warning 警告]-可以使用 UNSAFE_componentWillMount 消除警告
-     - 如果开启了 React.StrictMode[React 严格模式]：即使使用 UNSAFE_componentWillMount 也会抛出红色错误警告
-       - React.StrictMode[React 严格模式]：会检查 React 中的不规范语法，或者是一些不建议使用的 api 等
-       - "use strict":JS 严格模式
-4. 触发 render 周期函数：渲染
-5. 触发 componentDidMount 周期函数：第一次渲染完毕
-   - 可以获取真实 DOM ：已经把 virtualDOM 转变为真实 DOM 了
+     - 方案二：即使我们不在constructor中处理[或者不写constructor]，在constructor处理完毕后，React内部也会把传递的props挂载到实例上：所以在其他函数中，只要保证this是实例，就可以基于this.props获取到传递的属性
+       - 同样this.props获取属性对象也是被冻结的{只读}：Object.isFrozen(this.props)->true
+  2. 初始化状态
+     - 状态：后期修改状态，可以触发视图更新
+     - 需要手动初始化，如果我们没有去做相关处理，则默认会往实例上挂载一个state，初始值是null => this.state = null
+     - 修改状态，控制试图更新
+       - this.state.xxx = xxx 这种方法无法让视图更新
+       - 需要根据React.Component.proptotype提供的方法操作：
+          1. this.setState(partialState) 既可以修改状态，也可以让视图更新
+             - partialState 部分是状态 this.setState({xxx:xxx})
+          2. this.forceUpdate() 强制更新（不推荐）
+  3. 触发 componentWillMount 周期函数（钩子函数）：组件第一次渲染之前
+     - 钩子函数：在程序运行到某个阶段，提供的处理函数，让开发者在这个阶段做一些自定义的事情
+       - componentWillMount这个周期函数：目前可以使用，但是未来要被移除了，所以不建议使用[浏览器控制台会进行warning警告]-可以使用UNSAFE_componentWillMount消除警告
+       - 如果开启了React.StrictMode[React严格模式]：即使使用UNSAFE_componentWillMount也会抛出红色错误警告
+         - React.StrictMode[React严格模式]：会检查React中的不规范语法，或者是一些不建议使用的api等
+         - "use strict":JS严格模式
+  4. 触发 render 周期函数：渲染
+  5. 触发 componentDidMount 周期函数：第一次渲染完毕
+     - 可以获取真实DOM ：已经把virtualDOM转变为真实DOM了
 
 ##### 第一次渲染 流程图
 
-```mermaid
-    graph
+  ```mermaid
+      graph
 
-    start --> getDefaultProps
-    getDefaultProps --> getInitialState
-    getInitialState --> componentWillMount
-    componentWillMount --> render
-    render --> componentDidMount
+      start --> getDefaultProps
+      getDefaultProps --> getInitialState
+      getInitialState --> componentWillMount
+      componentWillMount --> render
+      render --> componentDidMount
 
-    开始 --> 初始化props
-    初始化props --> 初始化state
-    初始化state --> 第一次渲染之前
-    第一次渲染之前 --> 第一次渲染
-    第一次渲染 --> 第一次渲染完毕
+      开始 --> 初始化props
+      初始化props --> 初始化state
+      初始化state --> 第一次渲染之前
+      第一次渲染之前 --> 第一次渲染
+      第一次渲染 --> 第一次渲染完毕
 
-```
+  ```
+
 #### 组件更新
 
 ##### 组件更新逻辑[组件内部更改]
@@ -688,7 +686,7 @@ const Demo = function Demo(props) {
 - 元素标签：获取对应的DOM元素
 - 类组件：获取当前组件的实例对象
   - 后续可以根据实例，获取子组件中的相关信息
-- 函数组件设置ref，** 报错 ** ：Function components cannot be given refs. Attempts to access this ref will fail.
+- 函数组件设置ref，**报错** ：Function components cannot be given refs. Attempts to access this ref will fail.
   - 但是我们让其配合 React. forwardRef 实现ref的转发
   - 目的：获取函数组件内部的某个元素
 
