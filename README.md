@@ -3,7 +3,7 @@
  * @Author: zcc
  * @LastEditors: zcc
  * @Date: 2023-02-14 10:06:25
- * @LastEditTime: 2023-03-27 16:52:04
+ * @LastEditTime: 2023-05-25 22:10:01
 -->
 
 # Getting Started with Create React App
@@ -306,6 +306,12 @@
      - 但是视图不会更新
    - 也就是说函数组件第一次渲染后，组建的内容，不会根据组件内的某些操作，再次进行更新，所以称之为静态组件
 
+#### 函数组件总结
+- 不具备“状态，ref，周期函数”等内容，第一次渲染完毕后，无法基于组件内部的操作来控制其更新，因此称之为静态组件
+- 但是具备属性及插槽，父组件可以控制其重新渲染
+- 渲染流程简单，速度快
+- 基于FP（函数式编程）的思想设计，提供更细颗粒度的逻辑组织和复用。
+
 ### 类组件
 
 #### 类 tips
@@ -338,22 +344,25 @@
   let p = new Parent(10,20)
   ```
 
-
-
 #### setState 
+
 this.setState([partialstate], [callback])
+
 - [partialstate] :支持部分状态更改
+
   ```jsx
   this. setState(
     ×：100 //不论总共有多少状态，我们只修改了x，其余的状态不动
   ) :
   ```
+
 - [callback]：在状态更改/视图更新完毕后触发执行「也可以说只要执行了setstate, callback一定会执行」
   - 发生在componentDidUpdate周期函数之后 「Didupdate会在任何状态更改后都触发执行；而回调函数方式，可以在指定状态更新后处理-些事情；』
   - 特殊：即便我们基于shouldComponentupdate阻止了状态/视图的更新，Didupdate周期函数肯定不会执行了，但是我们设置的这个callback回调函数依然会被触发执行！
   - 类似于Vue中的$nextTick
 
 ##### setState底层处理机制
+
 - 在react18中，setState在任何地方执行都是异步操作
 - 原因
   - r18有一套更新队列的机制
@@ -370,10 +379,11 @@ this.setState([partialstate], [callback])
 - flushSync 刷新队列
 
 #### 创建类组件
-  - 创建一个构造函数（类）
-    - 要求必须继承 React.Component/PureComponent 这个类
-    - 我们习惯于使用 es5 中的 class 创建类【因为方便】
-    - 必须给当前类设置一个 render 方法[放在其原型上]：在 render 方法中，返回需要渲染的视图
+
+- 创建一个构造函数（类）
+  - 要求必须继承 React.Component/PureComponent 这个类
+  - 我们习惯于使用 es5 中的 class 创建类【因为方便】
+  - 必须给当前类设置一个 render 方法[放在其原型上]：在 render 方法中，返回需要渲染的视图
 
 #### 第一次渲染逻辑
 
@@ -431,6 +441,7 @@ this.setState([partialstate], [callback])
 
 ```
 #### 组件更新
+
 ##### 组件更新逻辑[组件内部更改]
 
 1. 触发 shouldComponentUpdate 是否允许更新
@@ -489,22 +500,31 @@ this.setState([partialstate], [callback])
       子didUpdate --> 父didUpdate
 
   ```
+
 #### 组件销毁
+
 1. 触发componentWillUnmount周期函数：组件销毁之前
 2. 销毁
 
+#### 类组件总结
+- 具备“状态，ref，周期函数”等内容，灵活控制组件更新，基于钩子函数也可以灵活掌控不同阶段的不同事情
+- 渲染流程复杂繁琐，渲染速度相对较慢
+- 基于OOP（面向对象）的思想设计，更方便实现继承。
+
 ### 静态组件与动态组件
-> 函数组件是“静态组件"：
->   - 组件第一次渲染完毕后，无法基于“内部的某些操作”让组件更新「无法实现“自更新”」；但是，如果调用它的父组件更新了，那么相关的子组件也-定会更新「可能传递最新的属性值进来」；
->   - 函数组件只具备属性，所以无法实现自更新
->   - 函数组件优势：比类组件的机制简单，渲染速度快
-> 类组件是“动态组件”：
->   - 组件在第一渲染完毕后，除了父组件更新可以触发其更新外，我们还可以通过：this.setstate修改状态 或者 this.forceupdate 等方式.让组件实现“自重新"！
->   - 类组件具备：属性、状态、周期函数、ref... 「几平组件应该有的东西它都具备」
->   - 优势：功能强大
-> - hooks组件：具备了函数组件和类组件的各自优势，在函数组件的基础上，基于hooks函数，让函数组件也可以拥有状态，周期函数等，让函数组件也可以实现自更新
+
+- 函数组件是“静态组件"：
+  - 组件第一次渲染完毕后，无法基于“内部的某些操作”让组件更新「无法实现“自更新”」；但是，如果调用它的父组件更新了，那么相关的子组件也-定会更新「可能传递最新的属性值进来」；
+  - 函数组件只具备属性，所以无法实现自更新
+  - 函数组件优势：比类组件的机制简单，渲染速度快
+- 类组件是“动态组件”：
+  - 组件在第一渲染完毕后，除了父组件更新可以触发其更新外，我们还可以通过：this.setstate修改状态 或者 this.forceupdate 等方式.让组件实现“自重新"！
+  - 类组件具备：属性、状态、周期函数、ref... 「几平组件应该有的东西它都具备」
+  - 优势：功能强大
+- hooks组件：具备了函数组件和类组件的各自优势，在函数组件的基础上，基于hooks函数，让函数组件也可以拥有状态，周期函数等，让函数组件也可以实现自更新
 
 ### PureComponent和Component的区别：
+
 - PureComponent会给类组件默认加一个shouldComponentupdate周期函数
   - 在此周期函数中，它对新老的属性/状态 会做一个钱浅比较
   - 如果经过浅比较，发现属性和状态井没有改变，则返回false 「也就是不继续更新组建」；有变化才会去更新！！
@@ -546,16 +566,29 @@ const shalldowEqual = (objA, objB) => {
 
 ### hooks 组件
 
+#### Hook函数
+
+- useState : 目的是在函数中使用状态，并于后期基于状态修改，让组件更新
+  - let [num,setNum] = useState(initialValue)
+    - 执行useState,传递initialValue为初始值
+    - 执行这个方法，返回结果是一个数组：[状态值，修改状态的方法]
+      - num变量存储的是：获取的状态值
+      - setNum变量存储的是：修改变量的方法
+    - 执行 setNum（value）
+      - 修改状态值为value
+      - 通知视图更新
+> 函数组件[或者Hooks组件]不是类组件，所以没有实例的概念，【调用组件不再是创建类的实例，而是把函数执行，产生一个私有上下文而已，再所以，在函数组件中不涉及this的处理
+
 ## 插槽
 
 1. 封装组件时，预留插槽位置
 
-```jsx
-const Demo = function Demo(props) {
-  let { children } = props;
-  return <div>{children}</div>;
-};
-```
+  ```jsx
+  const Demo = function Demo(props) {
+    let { children } = props;
+    return <div>{children}</div>;
+  };
+  ```
 
 2. 多个插槽
 
@@ -621,14 +654,18 @@ const Demo = function Demo(props) {
   - 构造函数：把构造函数基于 new 执行[也就是创建类的一个实例]，也会把解析出来的 props 传递过去
     - 每调用一次类组件都会创建一个单独的实例
     - 把类组件中编写的 render 函数执行，把返回的 jsx[virtualDOM]当作组件视图进行渲染！！
+
 ## DOM相关
 
 - componentDidMount :第一次渲染完毕[virtualDOM已经变为真实DOM]：此时我们可以获取所需操作的DOM元素
+
 ### 受控组件与非受控组件
+
 - 受控组件：基于修改数据/状态，让视图更新，达到需要效果
 - 非受控组件：基于ref获取DOM元素，我们操作DOM元素，来实现需求和效果
 
 ### 基于ref获取DOM元素的语法
+
 1. 给需要获取的元素设置ref=’xxx’，后期基于this.refs.xxx去获取相应的DOM元素「不推荐使用」
   - <h2 ref="titleBox">...</h2> 
   - 获取：this.refs.titleBox
@@ -654,6 +691,7 @@ const Demo = function Demo(props) {
 - 函数组件设置ref，** 报错 ** ：Function components cannot be given refs. Attempts to access this ref will fail.
   - 但是我们让其配合 React. forwardRef 实现ref的转发
   - 目的：获取函数组件内部的某个元素
+
   ```jsx
   const Child2 = React.forwardRef(function Child(props, ref) {
   // console. log(ref);//我们调用child2的时候，设置ref属性值[函数]
@@ -663,12 +701,17 @@ const Demo = function Demo(props) {
   </div>
   })
   ```
+
 ## 合成事件
+
   解决浏览器的兼容性：onXxxx={函数}
+
 - bind在React事件绑定的中运用
   - 绑定的方法是一个普通西数，需要改变西数中的this是实例，此时需要用到bind「一般都是绑定箭头函数」
   - 想给函数传递指定的实参，可以基于bind预先处理 「bind会把事件对象以最后一个实参传递给函数」
+
 ### react中合成事件的处理原理
+
 - “绝对不是”给当前元素基于addEventListener单独做的事件鄉定，React中的合成事件，都是基于“事件委托”处理的！
   - 在React17及以后版本，都是委托给＃root这个容器「捕获和冒泡都做了委托」；
   - 在17版本以前，都是为委托给document容器的「而且只做了冒泡阶段的委托」；
@@ -701,4 +744,20 @@ const Demo = function Demo(props) {
   }, false);
   ```
 
-  
+# 服务器请求
+
+## 失败
+- 请求失败(网络层失败)：服务器返回的不是200状态码
+- 服务器返回信息code：200，但是最终不是我们想要的
+## Post请求
+需要基于请求主体把信息传递给服务器
+格式要求：
+- 普通对象：变为'[object,object]'字符串传递给服务器
+  - 把普通对象作为json传递给服务器
+  - formdata 用于文件上传 multipart/form-data
+    - let fm = new FormData() fm.append('file',file)
+  - buffer或者进制格式
+- 字符串
+  - json字符串 application/json
+  - urlencoded 格式字符串  application/x-www-urlencoded :'x=10&b=ss'
+  - 普通字符串 text/plain
