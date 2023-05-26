@@ -3,7 +3,7 @@
  * @Author: zcc
  * @LastEditors: zcc
  * @Date: 2023-02-14 10:06:25
- * @LastEditTime: 2023-05-25 22:12:20
+ * @LastEditTime: 2023-05-26 14:53:57
 -->
 
 # Getting Started with Create React App
@@ -310,6 +310,232 @@
 - 渲染流程简单，速度快
 - 基于FP（函数式编程）的思想设计，提供更细颗粒度的逻辑组织和复用。
 
+
+#### Hook函数
+
+> 函数组件的每一次渲染(或者是更新)，都是把函数(重新)执行，产生一个全新的“私有上下文”!(内部的代码也需要重新执)
+
+1. useState : 目的是在函数中使用状态，并于后期基于状态修改，让组件更新
+   - let [num,setNum] = useState(initialValue)
+     - 执行useState,传递initialValue为初始值
+     - 执行这个方法，返回结果是一个数组：[状态值，修改状态的方法]
+       - num变量存储的是：获取的状态值
+       - setNum变量存储的是：修改变量的方法
+     - 执行 setNum（value）
+       - 修改状态值为value
+       - 通知视图更新
+   - useState自带了性能优化的机制
+     - 每一次修改状态值的时候，会拿最新要修改的值和之前的状态值做比较[基于0bject.is作比较]
+     - 如果发现两次的值是一样的，则不会修改状态，也不会让视图更新(可以理解为: 类似于PureComponent，在shouldComponentUpdate中做了浅比较和优化)
+     - ![性能优化渲染逻辑](./readmeIMG/useState-4.png)
+   - 需求: 让函数只更新一次，但是最后的结果是20 
+     - ![需求](./readmeIMG/useState-5.png)
+   - useState 原理
+      ``` JS
+      var  state;
+      function useState(initialValue) {
+        if (typeof _state === "undefined") {
+          if(typeof initialValue==="function"){
+            _state = initialValue()
+          } else {
+            _state = initialValue
+          }
+        };
+        var setState = function setState(value){
+          if(Object.is(_state,value)) return;
+          if(typeof value==="function"){
+            _state = value(_state)
+          } else {
+            _state = value
+          }
+        }
+        return [_state,setState]
+      }
+      ```
+
+  > 函数组件[或者Hooks组件]不是类组件，所以没有实例的概念，【调用组件不再是创建类的实例，而是把函数执行，产生一个私有上下文而已，再所以，在函数组件中不涉及this的处理
+  
+  - 函数组件的每一次渲染(或者是更新)，都是把函数(重新)执行，产生一个全新的“私有上下文”!
+    - 内部的代码也需要重新执
+    - 涉及的函数需要重新的构建{这些函数的作用域(函数执行的上级上下文)，是每一次执行DEMO产生的闭包}
+    - 每一次执行DEMO函数，也会把usestate重新执行，但是:
+      - 执行usetate，只有第一次，设置的初始值会生效，其余以后再执行，获取的状态都是最新的状态值而不是初始值
+      - 返回的修改状态的方法，每一次都是返回一个新的
+    - ![函数组件渲染逻辑](./readmeIMG/useState-1.png)
+  - 在React18中，我们基于useState创建出来的“修改状态的方法”，它们的执行也是异步的原理: 等同于类组件中的this.setState
+    - 基于异步操作 & 更新队列，实现状态的批处理
+    - 在任何地方修改状态，都是采用异步编程的
+    - ![异步渲染逻辑](./readmeIMG/useState-2.png)
+  - flushSync会立即刷新更新队列
+    - ![flushSync渲染逻辑](./readmeIMG/useState-3.png)
+  
+2. useEffect: 在函数组件中，使用生命周期函数
+   - useEffect(callback): 没设置依赖
+     - 第一次渲染完毕后，执行callback，等价于 componentDidMount
+     - 在组件每一次更新完毕后，也会执行callback，等价于 componentDidUpdate
+   - useEffect(callback,[]): 设置了，但是无依赖
+     - 只有第一次染完毕后，才会执行callback，每一次视图更新完毕后，callback不再执行
+     - 类似于 componentDidMount
+   - useEffect(callback.[依赖的状态(多个状态)]):
+     - 第一次渲染完毕会执行callback
+     - 当依赖的状态值(或者多个依赖状态中的一个)发生改变，也会触发callback执行
+     - 但是依赖的状态如果没有变化，在组件更新的时候，callback是不会执行的
+   - useEffect必须在函数的最外层上下文中调用，不能把其嵌入到条件判断、循环等操作语句中
+
+    ``` js
+      useEffect(()=>{
+        return ()=>{
+          // 返回的小函数，会在组件释放的时候执行
+          // 如果组件更新，会把上一次返回的小函数执行 可以“理解为”上一次渲染的组件释放了
+        }
+      })
+    ```
+    ![useEffect渲染逻辑](./readmeIMG/useState-6.png)
+   - useEffect如果设置返回值，则返回值必须是一个函数:代表组件销毁时触发
+     - 诉求：第一次渲染完毕后，从服务器异步获取数据
+     - ``` js
+        useEffect(()=>{
+          const next = async () => {
+            let dath = await queryData();
+            console.log('成功:data);
+          }
+          next():
+        },[])
+      ```
+3. useLayoutEffect 
+   - 如果链表中的callback执行又修改了状态值 [视图更新]
+     - 对于 useEffect来讲: 第一次真实 DOM已经染，组件更亲会重新渲染真实的DOM; 所以频繁切换的时候，会出现样式内容闪烁!
+     - 对于 useLavoutEffect来讲: 第-次真实 DOM还未染，遇到callback中修改了状态，视图立即更新，创建出新的virtualDOM然后和上一次的virtualDOM合并在一起染为真实DOM; 也就是此类需求下，真实DOM只渲染一次，不会出现内容/样式的闪烁
+     - ![useEffect和useLayoutEffect渲染逻辑](./readmeIMG/useState-7.png)
+   - 组件渲染
+     1. 基于react-app编译
+     2. 创建 virtualDOM
+        - useLayoutEffect加入链表中的方法，会在第二步结束，就通知执行!
+     3. DOM-DIFF 被渲染为 真实的DOM
+        - useEffect加入链表中的方法是在第三步结束后，通知执行!
+   - Effect链表中useLayoutEffect和useLayoutEffect的区别
+     - useLayoutEffect会阻塞浏览器染真实DOM，优先执行Effect链表中的callback
+     - useEffect不会阻塞浏览器渲染真实DOM，在渲染真实DOM的同时，去执行Effect链表中的callback;
+   - 视图更新的步骤
+     1. 基于babel-preset-react-app把JSX编译为createElement格式
+     2. 把createElement执行，创建出virtualDOM
+     3. 基于root.render方法把virtualDOM变为真实DOM对象  [DOM-DIFF]
+        - useLavoutEffect阳塞第四步操作，先去执行Effect链表中的方法 同步操作
+        - useEffect第四步操作和Effect链表中的方法执行，是同时进行的异步操作
+     4. 浏览器染和绘制真实DOM对象
+        ```js
+          useLayoutEffect(() => {
+            console.log('useLayoutEffect'); //第一个输出
+          },[num] ) ;
+          useEffect(() => {
+            console.log('useEffect'); //第二个输出
+          },[num] ) ;
+        ```
+4. useRef
+   - 基于“ref=[函数}”的方式，可以把创建的DOM元素(或者子组件的实例)赋值给box变量
+     - ```js
+          import React,{useRef}from "react";
+          
+          const demo = function demo (){
+            let box ;
+            useEffect(() => {
+              console.log(box):
+            },[num] ) ;
+            return <div className="demo">
+              <span className="num" ref={x => box = x}>10</span>
+            </div>;
+          }
+        ```
+   - 也可与基于 React.createRef 创建ref对象来获取想要的内容
+     - 既可在类组件中使用，也可以在函数组件中使用
+     - ```js
+          import React,{useRef}from "react";
+          
+          const demo = function demo (){
+            let box = React.createRef()
+            useEffect(() => {
+              console.log(box.current):
+            },[num] ) ;
+            return <div className="demo">
+              <span className="num" ref={box}>10</span>
+            </div>;
+          }
+        ```
+   - 函数组件中，还可以基于 useRef Hook函数，创建一个ref对象】
+     - useRef 只能在函数组件中用所有的ReactHook函数，都只能在函数组件中时候用，在类组件中使用会报错
+     - ```js
+          import React,{useRef}from "react";
+          
+          const demo = function demo (){
+            let box = useRef(null)
+            useEffect(() => {
+              console.log(box.current):
+            },[num] ) ;
+            return <div className="demo">
+              <span className="num" ref={box}>10</span>
+            </div>;
+          }
+        ```
+   - createRef 和 useRef 在函数组件中的对比
+     - useRef再每一次组件更新的时候(函数重新执行)，再次执行useRef方法的时候，不会创建新的REF对象了，获取到的还是第一次创建的那个REF对象!!
+     - createRef在每一次组件更新的时候，都会创建一个全新的REF对象出来，比较浪费性能!!
+     - 总结:在类组件中，创建REF对象，我们基于 ReactcreateRef 处理;但是在函数组件中，为了保证性能，我们应该使用专属的 useRef 处理! !
+   - 获取子组件内部实例
+     - ```js
+          import React,{useRef}from "react";
+          //方法1 基于ref获取子组件的实例，这样基于实例，可以调用子组件内部，挂载到实例上的东西
+          class Child extends React.Component {
+            state = { x: 1000 };
+            render() {
+              return <div className="child-box">
+                {this.state.x}
+              </div>
+            }
+          }
+          // 基于forwardRef实现ref转发，目的: 获取子组件内部的某个元素
+          const Child = React.forwardRef(function Child(props, ref) {
+            // console.log(ref); //在DEMO中，调用Child的时候，传递的ref对象 x
+            return <div className="child-box">
+              <span ref={ref}>哈哈哈</span>
+            </div>;
+          })
+          // 父组件
+          const demo = function demo (){
+            let box = useRef(null)
+            useEffect(() => {
+              console.log(box.current):
+            },[num] ) ;
+            return <div className="demo">
+              <Child ref={box} />
+            </div>;
+          ≈
+        ```
+   
+5. useImperativeHandle
+   - 基于fowardRef实现ref转发的同时，获取函数子组件内部的状态或者方法
+   - ```js
+      const Child = React.forwardRef(function Child(props, ref) {
+            let [text,setText] = useState('你好世界');
+            const submit = () => {};
+            useImperativeHandle( ref,() =>{
+              //在这里返回的内容，都可以被父组件的REF对象获取到
+              return {text,submit}
+            })
+            return <div className="child-box">
+              <span ref={ref}>哈哈哈</span>
+            </div>;
+          })
+      // 父组件
+      const demo = function demo (){
+        let box = useRef(null)
+        useEffect(() => {
+          console.log(box.current):
+        },[num] ) ;
+        return <div className="demo">
+          <Child ref={box} />
+        </div>;
+      }
+      ```
 ### 类组件
 
 #### 类 tips
@@ -509,19 +735,18 @@ this.setState([partialstate], [callback])
 - 渲染流程复杂繁琐，渲染速度相对较慢
 - 基于OOP（面向对象）的思想设计，更方便实现继承。
 
-### 静态组件与动态组件
+#### 类组件中ref
 
-- 函数组件是“静态组件"：
-  - 组件第一次渲染完毕后，无法基于“内部的某些操作”让组件更新「无法实现“自更新”」；但是，如果调用它的父组件更新了，那么相关的子组件也-定会更新「可能传递最新的属性值进来」；
-  - 函数组件只具备属性，所以无法实现自更新
-  - 函数组件优势：比类组件的机制简单，渲染速度快
-- 类组件是“动态组件”：
-  - 组件在第一渲染完毕后，除了父组件更新可以触发其更新外，我们还可以通过：this.setstate修改状态 或者 this.forceupdate 等方式.让组件实现“自重新"！
-  - 类组件具备：属性、状态、周期函数、ref... 「几平组件应该有的东西它都具备」
-  - 优势：功能强大
-- hooks组件：具备了函数组件和类组件的各自优势，在函数组件的基础上，基于hooks函数，让函数组件也可以拥有状态，周期函数等，让函数组件也可以实现自更新
+- 我们基于ref可以做的事情
+  1. 赋值给一个标签: 获取DOM元素
+  2. 赋值给一个类子组件:获取子组件实例可以基于实例调用子组件中的属性和方法等
+  3. 赋值给一个函数子组件: 报错[需要配合React.forwardRef实现ref转发获取子组件中的摸一个DOM元素]
+- re的使用方法
+  - ref='box' | this.refs.box 获取(不推荐使用)
+  - ref = {x=>this.box=x}  |  this.box 获取
+  - this.box=React.createRef() 创建一个ref对象 <h2 ref={this.box}> | this.box.current 获取DOM元素
 
-### PureComponent和Component的区别：
+#### PureComponent和Component的区别：
 
 - PureComponent会给类组件默认加一个shouldComponentupdate周期函数
   - 在此周期函数中，它对新老的属性/状态 会做一个钱浅比较
@@ -562,20 +787,23 @@ const shalldowEqual = (objA, objB) => {
 };
 ```
 
-### hooks 组件
 
-#### Hook函数
 
-- useState : 目的是在函数中使用状态，并于后期基于状态修改，让组件更新
-  - let [num,setNum] = useState(initialValue)
-    - 执行useState,传递initialValue为初始值
-    - 执行这个方法，返回结果是一个数组：[状态值，修改状态的方法]
-      - num变量存储的是：获取的状态值
-      - setNum变量存储的是：修改变量的方法
-    - 执行 setNum（value）
-      - 修改状态值为value
-      - 通知视图更新
-> 函数组件[或者Hooks组件]不是类组件，所以没有实例的概念，【调用组件不再是创建类的实例，而是把函数执行，产生一个私有上下文而已，再所以，在函数组件中不涉及this的处理
+### 静态组件与动态组件
+
+- 函数组件是“静态组件"：
+  - 组件第一次渲染完毕后，无法基于“内部的某些操作”让组件更新「无法实现“自更新”」；但是，如果调用它的父组件更新了，那么相关的子组件也-定会更新「可能传递最新的属性值进来」；
+  - 函数组件只具备属性，所以无法实现自更新
+  - 函数组件优势：比类组件的机制简单，渲染速度快
+- 类组件是“动态组件”：
+  - 组件在第一渲染完毕后，除了父组件更新可以触发其更新外，我们还可以通过：this.setstate修改状态 或者 this.forceupdate 等方式.让组件实现“自重新"！
+  - 类组件具备：属性、状态、周期函数、ref... 「几平组件应该有的东西它都具备」
+  - 优势：功能强大
+- hooks组件：具备了函数组件和类组件的各自优势，在函数组件的基础上，基于hooks函数，让函数组件也可以拥有状态，周期函数等，让函数组件也可以实现自更新
+
+
+
+
 
 ## 插槽
 
