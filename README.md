@@ -3,7 +3,7 @@
  * @Author: zcc
  * @LastEditors: zcc
  * @Date: 2023-02-14 10:06:25
- * @LastEditTime: 2023-05-26 14:53:57
+ * @LastEditTime: 2023-05-26 16:12:50
 -->
 
 # Getting Started with Create React App
@@ -314,6 +314,7 @@
 #### Hook函数
 
 > 函数组件的每一次渲染(或者是更新)，都是把函数(重新)执行，产生一个全新的“私有上下文”!(内部的代码也需要重新执)
+> 函数组件的每一次更新，都是把函数重新执行 产生一个新的闭包，内部的代码也要重新执行一遍
 
 1. useState : 目的是在函数中使用状态，并于后期基于状态修改，让组件更新
    - let [num,setNum] = useState(initialValue)
@@ -353,21 +354,21 @@
       }
       ```
 
-  > 函数组件[或者Hooks组件]不是类组件，所以没有实例的概念，【调用组件不再是创建类的实例，而是把函数执行，产生一个私有上下文而已，再所以，在函数组件中不涉及this的处理
+   > 函数组件[或者Hooks组件]不是类组件，所以没有实例的概念，【调用组件不再是创建类的实例，而是把函数执行，产生一个私有上下文而已，再所以，在函数组件中不涉及this的处理
   
-  - 函数组件的每一次渲染(或者是更新)，都是把函数(重新)执行，产生一个全新的“私有上下文”!
+     - 函数组件的每一次渲染(或者是更新)，都是把函数(重新)执行，产生一个全新的“私有上下文”!
     - 内部的代码也需要重新执
     - 涉及的函数需要重新的构建{这些函数的作用域(函数执行的上级上下文)，是每一次执行DEMO产生的闭包}
     - 每一次执行DEMO函数，也会把usestate重新执行，但是:
       - 执行usetate，只有第一次，设置的初始值会生效，其余以后再执行，获取的状态都是最新的状态值而不是初始值
       - 返回的修改状态的方法，每一次都是返回一个新的
     - ![函数组件渲染逻辑](./readmeIMG/useState-1.png)
-  - 在React18中，我们基于useState创建出来的“修改状态的方法”，它们的执行也是异步的原理: 等同于类组件中的this.setState
+     - 在React18中，我们基于useState创建出来的“修改状态的方法”，它们的执行也是异步的原理: 等同于类组件中的this.setState
     - 基于异步操作 & 更新队列，实现状态的批处理
     - 在任何地方修改状态，都是采用异步编程的
     - ![异步渲染逻辑](./readmeIMG/useState-2.png)
-  - flushSync会立即刷新更新队列
-    - ![flushSync渲染逻辑](./readmeIMG/useState-3.png)
+     - flushSync会立即刷新更新队列
+      - ![flushSync渲染逻辑](./readmeIMG/useState-3.png)
   
 2. useEffect: 在函数组件中，使用生命周期函数
    - useEffect(callback): 没设置依赖
@@ -402,6 +403,7 @@
           next():
         },[])
       ```
+      
 3. useLayoutEffect 
    - 如果链表中的callback执行又修改了状态值 [视图更新]
      - 对于 useEffect来讲: 第一次真实 DOM已经染，组件更亲会重新渲染真实的DOM; 所以频繁切换的时候，会出现样式内容闪烁!
@@ -536,6 +538,86 @@
         </div>;
       }
       ```
+6. useMemo 相当于vue中的计算属性
+   - let xxx = useMemo(callback, [dependencies])
+     - 第一次渲染组件的时候，callback会执行
+     - 后期只有依赖的状态值发生改变，callback才会再执行
+     - 每一次会把callback执行的返回结果赋值给xxx
+     - useMemo具备“计算缓存”，在依赖的状态值没有发生改变，callback没有触发执行的时候，xxx获取的是上一次计算属性得出的结果，和Vue中的汁算属性非常的类似
+   - 优化的Hook函数
+     - 如果函数组件中，有消耗性能/时间的计算操作，则尽可能用usevemo緩存起来，设置对应的依赖；
+     - 这样可以保证，当非依赖的状态发生改变，不会去处理一些没必要的操作，提高组件更新的速度！！
+7. usecallback 
+   - 组件第一次渲染，useCallback执行，创建一个函数"callback"，賦值给xxx
+   - 组件后续每一次更新，判断依赖的状态值是否改变，如果改变，则重新创建新的函数堆，赋值给xxx；但是如果，依赖的状态没有更新「或者没有设置依赖“[】〞」则xxx获取的一直是第一次创建的函数堆，不会创建新的函数出来！！
+   - 或者说，基于useCallback，可以始终获取第一次创建函数的堆内存地址[或者说函数的引用]
+   - ![useCallback多次执行对比](./readmeIMG/useState-8.png)
+   - ** useCallback不要乱用！ ** 并不是所有組件内部的函数，都拿其处理会更好！ ！
+     - 虽然减少了堆内存的开辟
+     - 但是useCallback本身也有自己的处理逻银和緩存的机制，这个也消耗时间啊
+   - 场景：当父组件更新的时候，因为传递给子组件的属性仅仅是一个函数「特点：基本应该算是不变的」，所以不想再让子组件也跟着更新了！
+     - 第一条：传进给子组件的属性（函数），每一次需要是相同的堆内存地址(是一致的） ．基于useCa11back处理！！
+     - 第二条：在子组件内部也要做一个处理，验证父组件传递的属性是否发生改变，如果没有变化，则让子组件不能更新，有变化才需要更新 。
+       - 继承React.Purecomponent即可「在shouldcomponentupdate中对新老属性做了浅比较」！！
+       - 函数组件是基于 React.memo 函数，对新老传递的属性做比较，如果不一致，才会把函数组件执行，如果一致，则不让子组件更新！！
+    ```js
+      // 子组件使用React.Purecomponent
+      class Child extends React. PureComponent {
+        render(){
+          console.log('child render')
+          return <div>子组件</div>
+        }
+      }
+      // 子组使用React.memo
+      const Child = React. memo(function Child(props) {
+        render(){
+          console.log('child render')
+          return <div>子组件</div>
+        }
+      })
+      // 父组件
+      const Demo = function Demo (){
+        let [x, setX] = useState(0);
+        // const handle =()=>{}：//第一次：0x001 第二次：0x101 第三次：0x201 ...
+        const handle = usecal1back(() ={},[])；//第一次：9x001 第二次：0x001 第三次：0x001 . . .
+      }
+    ```
+8. 自定义hook
+   - setPartial：我们期望这个方法可以支持部分状态的更改（setstate：不支持部分状态更改的）
+    ```js 
+      const usePartialState = function usePartialState (initialValue) {
+        let [state, setState] = useState(initialValue);
+        const setPartial = function setPartial (partialState) {
+          setState({
+            ...state,
+            ...partialState
+          })
+        }
+        return [state, setPartial];
+      }
+      const Demo = function Demo () {
+        let [state, setPartial] = usePartialState({
+          supNum: 10,
+          oppNum: 5
+        })
+        const handle = (type) => {
+          if (type === 'sup') {
+            setPartiall({
+              supNum: state.supNum + 1
+            })
+            return;
+          }
+          setPartiall({
+              oppNum: state.oppNum + 1
+            })
+        }
+        render(){
+          return <div>{supNum+oppNum}</div>
+        }
+      }
+    ```
+
+   
 ### 类组件
 
 #### 类 tips
@@ -906,7 +988,7 @@ const Demo = function Demo(props) {
   - 获取：this.xxx.current
 > 原理：在render渲染的时候，会获取virtualDOM的ref属性
 >- 如果属性值是一个字符串，则会给this.refs增加这样的一个成员，成员值就是当前的DOM元素
->- 如果属性值是一个西数，则会把西数执行，把当前DOM元素传递给这个西数「x->DOM元素」，而在西数执行的内部，我们一般都会把DOM元素直接挂在到实例的某个属性上
+>- 如果属性值是一个函数，则会把函数执行，把当前DOM元素传递给这个函数「x->DOM元素」，而在函数执行的内部，我们一般都会把DOM元素直接挂在到实例的某个属性上
 >- 如果属性值是一个REF对象，则会把DOM元素赋值给对象的current属性
 
 #### 设置ref，目的
@@ -933,7 +1015,7 @@ const Demo = function Demo(props) {
   解决浏览器的兼容性：onXxxx={函数}
 
 - bind在React事件绑定的中运用
-  - 绑定的方法是一个普通西数，需要改变西数中的this是实例，此时需要用到bind「一般都是绑定箭头函数」
+  - 绑定的方法是一个普通函数，需要改变函数中的this是实例，此时需要用到bind「一般都是绑定箭头函数」
   - 想给函数传递指定的实参，可以基于bind预先处理 「bind会把事件对象以最后一个实参传递给函数」
 
 ### react中合成事件的处理原理
