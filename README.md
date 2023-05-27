@@ -3,7 +3,7 @@
  * @Author: zcc
  * @LastEditors: zcc
  * @Date: 2023-02-14 10:06:25
- * @LastEditTime: 2023-05-26 16:12:50
+ * @LastEditTime: 2023-05-27 11:04:46
 -->
 
 # Getting Started with Create React App
@@ -549,12 +549,15 @@
      - 这样可以保证，当非依赖的状态发生改变，不会去处理一些没必要的操作，提高组件更新的速度！！
 7. usecallback 
    - 组件第一次渲染，useCallback执行，创建一个函数"callback"，賦值给xxx
-   - 组件后续每一次更新，判断依赖的状态值是否改变，如果改变，则重新创建新的函数堆，赋值给xxx；但是如果，依赖的状态没有更新「或者没有设置依赖“[】〞」则xxx获取的一直是第一次创建的函数堆，不会创建新的函数出来！！
+   - 组件后续每一次更新，判断依赖的状态值是否改变，如果改变，则重新创建新的函数堆，赋值给xxx；但是如果，依赖的状态没有更新「或者没有设置依赖“[]〞」则xxx获取的一直是第一次创建的函数堆，不会创建新的函数出来！！
    - 或者说，基于useCallback，可以始终获取第一次创建函数的堆内存地址[或者说函数的引用]
    - ![useCallback多次执行对比](./readmeIMG/useState-8.png)
-   - ** useCallback不要乱用！ ** 并不是所有組件内部的函数，都拿其处理会更好！ ！
+   - *** useCallback不要乱用！ *** 并不是所有組件内部的函数，都拿其处理会更好！ ！
      - 虽然减少了堆内存的开辟
      - 但是useCallback本身也有自己的处理逻银和緩存的机制，这个也消耗时间啊
+     - 如果没有设置任何依赖，则函数永远是在第一次组件渲染，产生的闭包中创建的！
+       - 函数中用到的信息「向上级上下文中找」，永远是第一次闭包中的信息！！
+       - ![useCallback没有设置任何依赖的渲染](./readmeIMG/useState-9.png)
    - 场景：当父组件更新的时候，因为传递给子组件的属性仅仅是一个函数「特点：基本应该算是不变的」，所以不想再让子组件也跟着更新了！
      - 第一条：传进给子组件的属性（函数），每一次需要是相同的堆内存地址(是一致的） ．基于useCa11back处理！！
      - 第二条：在子组件内部也要做一个处理，验证父组件传递的属性是否发生改变，如果没有变化，则让子组件不能更新，有变化才需要更新 。
@@ -582,6 +585,9 @@
         const handle = usecal1back(() ={},[])；//第一次：9x001 第二次：0x001 第三次：0x001 . . .
       }
     ```
+
+     
+
 8. 自定义hook
    - setPartial：我们期望这个方法可以支持部分状态的更改（setstate：不支持部分状态更改的）
     ```js 
@@ -617,7 +623,6 @@
       }
     ```
 
-   
 ### 类组件
 
 #### 类 tips
@@ -883,10 +888,297 @@ const shalldowEqual = (objA, objB) => {
   - 优势：功能强大
 - hooks组件：具备了函数组件和类组件的各自优势，在函数组件的基础上，基于hooks函数，让函数组件也可以拥有状态，周期函数等，让函数组件也可以实现自更新
 
+### 父子组件通信
 
+#### 渲染顺序
+> 依赖于深度优先原则
+- 父组件第一次渲染：父willMount -> 父render -> 子 willMount -> 子 render -> 子 didMount -> 父 didMount
+- 父组件更新：
+  - 父shouldUpdate -> 父willUpdate-＞父render  -> [子willReciveProps  -> 子 shouldUpdate -> 子willUpdate ->  子render-＞子didUpdate] -> 父 didUpdate
+  - 我们完全可以在子组件内部做优化处理，验证传递的属性值有没有变化，如果没有变化，则禁止更新
+- 父组件释放 
+  - 父wilUnmount->父释放中「子wilUnaMount->子释放」＞父释放
+#### 单向数据流
+1. 属性的传递方向是单向的
+   - 父组件可基于属性把信息传给子组件
+   - 子组件无法基于属性给父组件传信息：但可以把父组件专递的方法执行，从而实现子改父！
+2. 关于生命周期函数的延续
+   - 组件第一次渲染
+     - 父 willMount -> 父render
+     - 子 willMount -> 子 render -> 子 didMount
+     - 父 didMount
+   - 组件更新
+     - 父 shouldUpdate -> 父 willUpdate -> 父 render
+     - 子willReciveProps  -> 子 shouldUpdate -> 子willUpdate ->  子render-＞子didUpdate
+     - 父 didUpdate
 
+#### 类组件父子通信
 
+```js
+class Vote extends React.Component{
+  state = {
+    supNum: 10,
+    oppNum: 0
+  }
+  //设置为箭头函数：不论方法在哪执行的，方法中的this永远都是Vote父组件的实例
+  change = (type) => {
+    let { supNum, oppNum } = this.state;
+    if (type === 'sup') {
+      this.setState({ supNum: supNum + 1 });
+      return;
+    }
+    this.setState({ oppNum: oppNum + 1 }) ;
+  }
+  render() {
+    let { supNum, oppNum } = this.state;
+    return <div className="vote-box">
+      <span>{ suoNum + oppNum }</span>
+      {/*把状态信息基于“属性”传递给儿子 父传子*/}
+      <VoteMain supNum={supNum} oppNum={oppNum}/>
+      {/*父组件把“修改自己状态”的方法，基于“属性”传递给儿子 儿子就以把传递的方法执行 实现子改父*/}
+      <VoteFooter change={this.change}/>
+    </div>
+  }
+}
 
+```
+```js
+import React from "react";
+import PropTypes from 'prop-types';
+class VoteMain extends React.Component{
+  static defaultProps = { 
+    supNum: 0,
+    oppNum: 0
+  }
+  static propTypes = {
+    supNum: PropTypes.number,
+    oppNum: PropTypes.number,
+  }
+  //  接收父组件传递的屬性值,然后渲染即可！
+  render() {
+    let { supNum, oppNum } = this.props;
+    let ratio = '--',
+        total = supNum + oppNum;
+    return <div className="main">
+      <p>支持人数：{total}人</p>
+    </div>
+  }
+}
+```
+
+```js
+import React from "react";
+import PropTypes from 'prop-types';
+class VoteFooter extends React.Component{
+  // 接收父组件基于属性传递过来的函数
+  static defaultProps = {};
+  static propTypes = {
+    change: PropTypes.func.isRequired
+  }
+  // 点击支持反对的时候，把传递进来的函数执行
+  // 可以传递一些实参 子传父
+  // 这个方法是修改父组件状态的 子改父
+  render() {
+    let { change } = this.props;
+    return <div className="main">
+      <Button type="'primary" onclick={change. bind (null, "sup")}>支持</Button>
+      <Button type="'primary" onclick={change. bind (null, "opp")}>反对</Button>
+    </div>
+  }
+}
+export default VoteFooter;
+```
+#### 函数父子组件通信
+
+``` js
+import React from "react";
+import PropTypes from 'prop-types';
+const VoteMain = function VoteMain (props) {
+  let { supNum, oppNum } = this.props;
+  let ratio = '--',
+      total = supNum + oppNum;
+  return <div className="main">
+    <p>支持人数：{total}人</p>
+  </div>
+}
+VoteMain.defaultProps = { 
+  supNum: 0,
+  oppNum: 0
+}
+VoteMain.propTypes = {
+  supNum: PropTypes.number,
+  oppNum: PropTypes.number,
+}
+export default VoteMain;
+```
+```js
+import React from "react";
+import PropTypes from 'prop-types';
+const VoteFooter = function VoteFooter (props){
+
+    let { change } = props;
+    return <div className="main">
+      <Button type="'primary" onclick={change. bind (null, "sup")}>支持</Button>
+      <Button type="'primary" onclick={change. bind (null, "opp")}>反对</Button>
+    </div>
+}
+VoteFooter.defaultProps = ();
+VoteFooter.propTypes = {
+  change: PropTypes. func. isRequired
+}
+export default VoteFooter;
+```
+
+#### 上下文对象
+![上下文的需求](./readmeIMG/useState-10.png)
+```js
+  // ThemeContext.js
+  import React from "react"
+  const ThemeContext = React.createContext () ;
+  export default ThemeContext;
+```
+- 基于上下文对象中，提供的Provider组件，用来
+  - 向上下文中存储信息：value属性指定的值就是要存储的信息
+  - 当祖先组件更新，render 重新执行，会把最新的状态值，再次存储到上下文对象中！！
+  
+  ```js
+  import ThemeContext from "@/ThemeContext";
+  class Vote extends React.Component{
+    state = {
+      supNum: 10,
+      oppNum: 0
+    }
+    change = (type) => {
+      let { supNum, oppNum } = this.state;
+      if (type === 'sup') {
+        this.setState({ supNum: supNum + 1 });
+        return;
+      }
+      this.setState({ oppNum: oppNum + 1 }) ;
+    }
+    render() {
+      let { supNum, oppNum } = this.state;
+      return 
+      <ThemeContext.Provider
+        value = {{
+          supNum,oppNum,change:this.change
+        }}
+      >
+        <div className="vote-box">
+          <span>{ suoNum + oppNum }</span>
+          <VoteMain />
+          <VoteFooter />
+        </div>
+      </ThemeContext.Provider>
+    }
+  }
+
+  ```
+
+  ```js
+    // 函数 父组件 
+    import React from "react";
+    import ThemeContext from "@/ThemeContext":
+    const Vote = function Vote(){
+      let [supNum, setSupNum] = useState (10),
+          [oppNum, setOppNum] = useState (5);
+      const change = type => {
+        if (type === 'sup') {
+          setSupNum (supNum + 1);
+          return;
+        }
+        setOppNum (oppNum + 1);
+      }
+      
+      return <ThemeContext.Provider
+          value = {{
+            supNum,oppNum,change:this.change
+          }}
+        >
+          <div className="vote-box">
+            <span>{ suoNum + oppNum }</span>
+            <VoteMain />
+            <VoteFooter />
+          </div>
+      </ThemeContext.Provider>
+    }
+    ```
+- 后代组件 （类组件）获取上下文信息
+  - 方案一
+    1. 导入创建的上下文对象
+    2. 给类组件设置静态私有属性，contextType =上下文对象，在this.context属性上，存储了上下文中的所有信息！！
+    3. 从this.context中荻取需要的信息即可
+    ```js
+    import React from "react";
+    import ThemeContext from "@/ThemeContext":
+    class VoteMain extends React.Component{
+      static contextType = ThemeContext;
+      render() {
+        let { supNum, oppNum } = this.context;
+        let ratio = '--',
+            total = supNum + oppNum;
+        return <div className="main">
+          <p>支持人数：{total}人</p>
+        </div>
+      }
+    }
+    ```
+    ```js
+    import React from "react";
+    import ThemeContext from "@/ThemeContext":
+    const VoteMain = function VoteMain(){
+      let { supNum, oppNum } = useContext (ThemeContext);
+      let ratio = '--',
+          total = supNum + oppNum;
+      return <div className="main">
+        <p>支持人数：{total}人</p>
+      </div>
+    }
+    ```
+
+  - 方案二
+    - <ThemeContext.Consumer>{context=>return 要渲染的视图}</ThemeContext.Consumer>
+    - context中，存储了上下文中的所有信息
+    ```js
+      import React from "react";
+      import ThemeContext from "@/ThemeContext":
+      class VoteFooter extends React.Component{
+        render() {
+          return <ThemeContext.Consumer>
+            {
+              context =>{
+                let { change } = context;
+                return <div className="main">
+                  <Button type="'primary" onclick={change. bind (null, "sup")}>支持</Button>
+                  <Button type="'primary" onclick={change. bind (null, "opp")}>反对</Button>
+                </div>
+              }
+            }
+            
+          </hemeContext.Consumer>
+        }
+      }
+      export default VoteFooter;
+      ```
+      ```js
+      import React from "react";
+      import ThemeContext from "@/ThemeContext":
+      const VoteFooter = function VoteFooter{
+          return <ThemeContext.Consumer>
+            {
+              context =>{
+                let { change } = context;
+                return <div className="main">
+                  <Button type="'primary" onclick={change. bind (null, "sup")}>支持</Button>
+                  <Button type="'primary" onclick={change. bind (null, "opp")}>反对</Button>
+                </div>
+              }
+            }
+            
+          </hemeContext.Consumer>
+      }
+      export default VoteFooter;
+      ```
 ## 插槽
 
 1. 封装组件时，预留插槽位置
