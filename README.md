@@ -3,7 +3,7 @@
  * @Author: zcc
  * @LastEditors: zcc
  * @Date: 2023-02-14 10:06:25
- * @LastEditTime: 2023-05-27 11:04:46
+ * @LastEditTime: 2023-05-27 11:46:27
 -->
 
 # Getting Started with Create React App
@@ -377,21 +377,24 @@
    - useEffect(callback,[]): 设置了，但是无依赖
      - 只有第一次染完毕后，才会执行callback，每一次视图更新完毕后，callback不再执行
      - 类似于 componentDidMount
-   - useEffect(callback.[依赖的状态(多个状态)]):
+   - useEffect(callback,[依赖的状态(多个状态)]):
      - 第一次渲染完毕会执行callback
      - 当依赖的状态值(或者多个依赖状态中的一个)发生改变，也会触发callback执行
      - 但是依赖的状态如果没有变化，在组件更新的时候，callback是不会执行的
    - useEffect必须在函数的最外层上下文中调用，不能把其嵌入到条件判断、循环等操作语句中
 
-    ``` js
-      useEffect(()=>{
-        return ()=>{
-          // 返回的小函数，会在组件释放的时候执行
-          // 如果组件更新，会把上一次返回的小函数执行 可以“理解为”上一次渲染的组件释放了
-        }
-      })
-    ```
-    ![useEffect渲染逻辑](./readmeIMG/useState-6.png)
+      ``` js
+        useEffect(()=>{
+          return ()=>{
+            // 返回的小函数，会在组件释放的时候执行
+            // 如果组件更新，会把上一次返回的小函数执行 可以“理解为”上一次渲染的组件释放了
+          }
+        })
+      ```
+      ![useEffect渲染逻辑](./readmeIMG/useState-6.png)
+   
+   - useEffect 进行异步请求
+     - ![useEffect 进行异步请求](./readmeIMG/useEffect.png)
    - useEffect如果设置返回值，则返回值必须是一个函数:代表组件销毁时触发
      - 诉求：第一次渲染完毕后，从服务器异步获取数据
      - ``` js
@@ -403,6 +406,7 @@
           next():
         },[])
       ```
+  
       
 3. useLayoutEffect 
    - 如果链表中的callback执行又修改了状态值 [视图更新]
@@ -584,9 +588,7 @@
         // const handle =()=>{}：//第一次：0x001 第二次：0x101 第三次：0x201 ...
         const handle = usecal1back(() ={},[])；//第一次：9x001 第二次：0x001 第三次：0x001 . . .
       }
-    ```
-
-     
+    ``` 
 
 8. 自定义hook
    - setPartial：我们期望这个方法可以支持部分状态的更改（setstate：不支持部分状态更改的）
@@ -622,7 +624,7 @@
         }
       }
     ```
-
+9. useStyles
 ### 类组件
 
 #### 类 tips
@@ -1179,6 +1181,36 @@ export default VoteFooter;
       }
       export default VoteFooter;
       ```
+
+### 高阶组件
+> React高阶组件：利用JS中的闭包「柯理化函数」实现的组件代理,我们可以在代理组件中，经过业务逻辑的处理，获取一些信息，最后基于属性等方案，传递给我们最终要渲染的组件！！[相当于Vue中的动态组件？]
+
+```jsx
+const App = function App() {
+  return <Demo x={10} y={20} enable={true} />
+}
+```
+```jsx
+const Demo = function Demo (props) {
+  console.log ('Demo:', props);
+  return <div className="demo">demo</div>
+}
+// 执行ProxyTest方法，传递一个组件进来 「Component」
+const ProxyTest = function ProxyTest (Component) {
+  return function HOC (props) {
+    // console. log (props); //=>{x:10,:20,enable:true}
+    // 真实要渲染的是Demo组件：把获取的props要传递给Demo
+    /* let { x, y, enable } = props;
+      return <Component ×={x} y={y} enable={enable} />; */
+    return <Component {...props} />
+  }
+}
+
+export default ProxyTest(Demo)
+//把函数执行的返回结果「应该是一个组件」，基于ES6Module规范导出，供App导入使用！！
+//当前案例中，我㝵出的是HOC 「HOC：higher-order-components」
+```
+
 ## 插槽
 
 1. 封装组件时，预留插槽位置
@@ -1344,12 +1376,12 @@ const Demo = function Demo(props) {
   }, false);
   ```
 
-# 服务器请求
+## 服务器请求
 
-## 失败
+### 失败
 - 请求失败(网络层失败)：服务器返回的不是200状态码
 - 服务器返回信息code：200，但是最终不是我们想要的
-## Post请求
+### Post请求
 需要基于请求主体把信息传递给服务器
 格式要求：
 - 普通对象：变为'[object,object]'字符串传递给服务器
@@ -1361,3 +1393,67 @@ const Demo = function Demo(props) {
   - json字符串 application/json
   - urlencoded 格式字符串  application/x-www-urlencoded :'x=10&b=ss'
   - 普通字符串 text/plain
+
+## 样式表
+1. 行内样式
+   - 优：这样确实可以保证组件和组件之间，元素和元素之间的样式不会冲突！
+   - 缺：
+     - 不利于样式的复用，如果提取为一个通用样式对象，则没有代码提示！！
+     - 不能使用伪类
+     - 编译后的样式和结构混潘在一起，也不利于优化！！
+   - 使用情况
+     - 样式是基于程序动态计算出来的，我们可以基于 style 方式，动态设置样式！
+     - 偶尔有一些标签，需要设置一个权重较高特殊样式，可以基于style的方式「原理：行内样式的优先级会高一些」
+2. 基于样式表、样式类名这样的方式，但是需要 人为有意识的、有规范的 規避样式冲突问题
+   - 首先保证每个组件最外层样式类名是不不冲突的
+   - 命名方案：路径+组件名 作为组件外层容器的名字！！
+   - 后期组件内部的元素，其样式，都基于less/sass/stylus嵌入到指定
+   - 优点
+     - 结构样式分离：实现了样式和JavaScript的分离
+     - 使用css所有功能：此方法允许我们使用CSS的任何语法，包括伪类、媒体查询等
+     - 使用缓存：可对样式文件进行强缓存或协商缓存
+     - 昜编写：CSS样式表在书写时会有代码提示
+   - 缺点
+     - 产生冲突：cSS选择器都具有相同的全局作用域，很容易造成样式冲突
+     - 性能低：预编译语言的嵌套，可能带来的就是超长的 选择器前缓，性能低！
+     - 没有真正的动态样式：在CSS表中难以实现动态设置样式
+3. xxx.module.css
+   - 这样的文件是CSS文件，不能在使用less/sass/stylus这样的预编译语言了
+   - 我们在组件中，基于ES6Module模块规范导入进来
+     - import sty from "./xxx.module.css"
+     - sty存储的是一个对象,对象中包含多组键值对
+       - 键：我们之前才css中编写的样式类名 .box{}
+       - 值：经过webpack编译后的样式类名 .Nav_bo__cEW30{}
+     - 我们编写的CSS样式也会被编译，所有之前的样式，也都编译为混淆后的类名了「和上述对象中编译后的值一样」
+     - 我们在組件中，所有元素的样式类，基于 sty xxx 去探作
+       ```js  
+        import sty from './Nav.module.css';
+        import common from './common.module.css';
+        <h2 className={`${sty.title} ${$icommon.hovercolor}`}>外购物商城</h2> 
+        ```
+     - 样式类名不会经过编译,或以此设置全局样式
+        ```css  
+          :global(.clearfix) {
+            clear: both;
+          }
+        ```
+     - 组合 && 继承
+        ```css  
+          .list {
+            width: 100px;
+          }
+          .link{
+            composes:list;
+            color:red;
+          }
+        ```
+        ``` html
+        <span class="list"></span>
+        ```
+   - CSS Modules 的原理
+     - 把各个组件中，编写的样式「不经过处理之前，是全局都生效样式」进行私有化处理
+     - 把所有样式类名，进行编译混淆，保证唯一性
+4. CSS-IN-JS
+   - 把csS写在Js中，这样可以基于JS運辑安现 样式的动态管理、实现通用样式的封裝！！
+   - React-JSS
+   - styled-components 要简单了
