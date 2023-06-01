@@ -3,7 +3,7 @@
  * @Author: zcc
  * @LastEditors: zcc
  * @Date: 2023-02-14 10:06:25
- * @LastEditTime: 2023-05-27 11:46:27
+ * @LastEditTime: 2023-06-01 11:08:47
 -->
 
 # Getting Started with Create React App
@@ -1457,3 +1457,168 @@ const Demo = function Demo(props) {
    - 把csS写在Js中，这样可以基于JS運辑安现 样式的动态管理、实现通用样式的封裝！！
    - React-JSS
    - styled-components 要简单了
+
+## redux
+
+### 基础
+
+### redux工程化
+
+> 把状态和reducer的管理，按照模块进行划分
+1. 按照模块，把reducer进行单独管理，每个模块都有自己的reducer：最后，我们还要把所有的reducer进行合井，合井为一个，赋值给我们创建的store！ ！
+2. 每一次dispatch派发的时候，都会去每个模块的reducer中找一追，把所有和派发行为标识匹配的逻辑执行！！
+   - 可能存在的问题：团队协作开发的时候，因为开发的人多，最后很可能派发的行为标识会有冲突！！
+   - 所以我们一定要保证，不管哪个模块，哪个組件，我们派发的行为标识，必须是唯一的！！
+   - 基于"宏管理 （統一管理），让所 有派发的行为标识，唯一性！！
+3. 创建actionCreator 对象，按模块管理我们需要派发的行为对象
+
+### 在组件中使用redux
+
+1. 我们需要创建上下文对象，基于其 Provider 把创建的store放在根組件的上下文信息中；后代组件需要基于上下文对象，获取到上下文中的store
+2. 需要用到公共状态的组件 
+   - store.getState()获取公共状态
+   - store.subscribe(让组件更新的西数)放在事件池中
+3. 需要派发的组件
+   - store.dispatch (actionCreator)
+
+### 在组件中使用redux+react-redux
+
+1. 提供的Provider组件，可以自己在内部创建上下文对象，把store放在根组
+件的上下文中！！
+2. 提供的connect函数，在  函数内部，可以获取到上下文中的store，然后快速的把公共状态，
+以及需要派发的操作，基于屬性传递给组件！！
+connect(mapStateToProps,mapDispatchToProps)(渲染的组件)
+
+
+## fetch
+
+### 向服务器发送数据请求的方案：
+- XMLHttpRequest
+  - 自己编写请求的逻辑和步骤
+  - 第三方库，对XMLHttpRequest进行封装「基于promise进行封装」
+- fetch 
+  - ES6内置的API， 本身即使基于promise，用全新的方案实现客户端和服务器端的数据请求
+  - 不兼容ie
+  - 机制完善度不如XMLHttpRequest
+    - 无法设置超时时间
+    - 没有内置的请求中断处理
+- 其它方案，主要是跨域为主
+  - jsonp
+  - postMessage
+  - 利用img的src发送请求，实现数据埋点和上报
+  - 。。。
+
+- 服务器返回的response对象 「Response类的实例」
+  - 私有属性
+    - body 响应主体信息「它是一个Readablestream可读流」
+    - headers 响应头信息「它是Headers类的实例』
+    - status/statusText 返回的HTTP状态码及描述
+      - 2xx：成功
+      - 301：永久重定向 ；302：临时重定向；304: 协商缓存的一种机制
+      - 400：参数错误； 401：无权限访问； 403: ；404:地址有问题；405:请求方式不被允许；408:超时
+      - 500:服务器错误
+
+
+### 实际使用
+
+- let promise = fetch(请求地址，配置项)
+  - 当请求成功，p的状态是fulfi1led，值是请求回来的内容；如果请求失败，p的状态是rejected，值是失败原因！
+  - 只要服务器有反馈信息，无论状态码是多少，都说明网络请求成功，最后实例p的状态都是fulfilled
+    - 只有服务器没有任何反馈（例如：请求中断、请求超时、断网等），实例p才是rejected!
+  - 在axios中，只有返回的状态码是以2开始的，才会让实例是成功态！
+- fetch的配置项
+  - method 请求的方式，默认是GET 「GET、HEAD、DELETE、OPTIONS; POST、PUT、PATCH: 」
+  - mode 请求模式 「no-cors, *cors, same-originj
+  - cache 缓存模式「*default, no-cache, reload, force-cache, only-if-cached」
+  - credentials 资源凭证（例如cookie) 「include, *same-origin, omit」
+    - fetch默认情况下，跨域请求中，是不允许携带资源凭证的，只有同源下才允许！！
+    - include：同源和跨域下都可以
+    - same-origin：只有同源才可以
+    - omit：都不可以
+    - headers :普通对象{}/Headers实例   自定义请求头信息
+    - body：设置请求信息
+      - 只适用于POST系列请求，在GET系列请求中设置body会报错{让返回的实例变为失败态}
+      - body设置的格式有要求的
+        - JSON字符串 application/json
+          - ’{"name":" xxx"" , "age":14, ...}‘
+        - URLENCODED宇符串 application/x-www-form-urlencoded
+          - ’xxx=txx&xxx=xxx‘
+        - 普通字符串 text/plain
+        - FormData对象 multipart/form-data
+          - 主要运用在文件上传（或者表单提交）的操作中！
+          - tet fm=new FormData(); fm.append（'file'，文件）；
+        - 二进制或者Buffer等格式
+- get请求时，fetch需要把传参的信息做处理，然后拼接到url地址后面
+- Headers类 头处理类「请求头或者响应头」 
+  - Headers.prototype
+    - append 新增头信息
+    - delete 删除头信息
+    - forEach 迭代荻取所有头信息
+    - get 获取某一项的信息
+    - has 验证是季包含某一项
+    - 。。。
+- 服务器返回的response对象「Response类的实例」
+   - 私有属性：
+     - body响应主体信息「它是一个Readablestream可读流」
+     - headers 响应头信息「它是Headers类的实例」
+     - status/statusText 返回的HTTP状态码及描述
+   - Response.prototype
+     - arrayBuffer
+     - blob
+     - formData
+     - json
+     - text
+     - ...
+   - 这些方法就是用来处理body可读流信息的，把可读流信息转换为我们自己需要的格式！
+   - 返回值是一个promise实例，这样可以避免，服务器返回的信息在转换中出现问题（例如：服务器返回的是一个流信息，我们转换为json对象肯定是不对的，此时可以让其返回失败的实例即可）
+  ```js
+    let p = fetch('/api')
+    p.then(res=>{
+      // 进入THEN中的时候，不一定是请求成功「因为状态码可能是各种情况」
+      let {headers, status, statusText } = response;
+      if (/^(2|3)\d{2}$/.test(status)) {
+        console.1og (`成功：`，response.json());
+        // console.1og("服务器时间：“，headers. get("Date"));
+        return response.json();
+      }
+      return Promise. reject({
+        code: -100,
+        status,
+        statusText
+      })
+      console.log(res,'请求成功')
+    }).then(val=>{
+      console.1og (`最终处理结果`，val);
+    })
+    .catch(err=>{
+      //会有不同的失败情况
+      //1.服务器没有返回
+      //2.状态码不对
+      //3.数据转换失败
+      console.log(err,'请求失败')
+    })
+  ```
+ - fetch的请求中断
+  
+  ```js
+    let ctrol = new AbortController();
+    fetch('/api',{signal: ctrol.signal}).then(response=>{
+      let {headers, status, statusText } = response;
+      if (/^(2|3)\d{2}$/.test(status)) {
+        console.1og (`成功：`，response.json());
+        return response.json();
+      }
+      return Promise. reject({
+        code: -100,
+        status,
+        statusText
+      })
+      console.log(res,'请求成功')
+    })
+    .catch(err=>{
+      // (code: 20, message: "The user aborted a request.", name: "AbortError")
+      console.log(err,'请求失败')
+    })
+    //立即中断请求
+    ctrol.abort();
+  ```
