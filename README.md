@@ -3,7 +3,7 @@
  * @Author: zcc
  * @LastEditors: zcc
  * @Date: 2023-02-14 10:06:25
- * @LastEditTime: 2023-06-01 11:08:47
+ * @LastEditTime: 2023-06-16 15:46:47
 -->
 
 # Getting Started with Create React App
@@ -1477,7 +1477,7 @@ const Demo = function Demo(props) {
 1. 我们需要创建上下文对象，基于其 Provider 把创建的store放在根組件的上下文信息中；后代组件需要基于上下文对象，获取到上下文中的store
 2. 需要用到公共状态的组件 
    - store.getState()获取公共状态
-   - store.subscribe(让组件更新的西数)放在事件池中
+   - store.subscribe(让组件更新的函数)放在事件池中
 3. 需要派发的组件
    - store.dispatch (actionCreator)
 
@@ -1622,3 +1622,244 @@ connect(mapStateToProps,mapDispatchToProps)(渲染的组件)
     //立即中断请求
     ctrol.abort();
   ```
+
+## Object.defineProperty(obj,key,descriptors)
+> 对象本身的规则限制：1. 冻结，2. 密封，3.扩展
+- Object.defineProperty(obj,key,descriptors)
+  1. 设置对象中某个成员的规则
+     - 如果成员已经存在，则修改其规则
+     - 如果成员不存在，则新增这个成员，并设置规则「默认所有规则都是false」
+  2. 数据劫持
+    ```js
+      Object.defineProperty(obj，'x',{
+        get(){
+          // 后期获取obj.x成员信息的时候，就会触发GET函数执行
+          // 返回内容是成员值
+          return 'xx'
+        },
+        set(val){
+          // 设置成员值的时候，会触发setter函数，val就是我们设置的值
+          
+        }
+      })
+    ```
+- 对象“成员”的规则限制
+  -  object.getownPropertyDescriptor(对象，成员)：获取对象中某个成员的规则
+  -  0bject.getownPropertyDescriptors(对象)：获取对象所有成员的规则
+  -  规则
+     -  configurable: 是否可以刪除
+     -  writable: 是否可以更
+     -  enumerable: 是否可枚挙「可以被for/in或者Object.keys列挙出来的属性是可枚挙的」
+     -  value：𢦓员值
+## JS装饰器 decorator
+> Javascript中的装饰器：就是对类、类属性、类方法之类的一种装饰，可以理解为在原有代码外层又包装了一层处理逻辑。这样就可以做到不直接修改代码，就实现某些功能。
+```js
+  const test = ()=>{}
+
+  // test 是装饰器
+  @test 
+  class Demo {}
+```
+- 需要安装依赖
+  - yarn add @babel/plugin-proposal-class-properties @babel/plugin-proposal-decorators
+  - yarn add roadhog@2.5.0-beta.1 来解决babel语法包和播件之问版本兼容的问题
+- 修改babel配置项
+  ```json
+    // package.json
+    {
+      "babe1":{
+        "presets": ["react-app"],
+        "plugins":[
+          [
+            // 支持装饰器语法
+            "@babel/plugin-proposal-decorators",
+            {
+              "legacy": true
+              // 让装饰器的语法以“遗留版”为主
+            }
+          ],
+          [
+            // 编译class插件
+            "@babel/plugin-proposal-class-properties",
+            {
+              "loose":true
+              // 如果值是false ，基于Object.defineProperty设置属性和方法
+              // true的话是直接设置
+            }
+          ]
+        ]
+      }
+    }
+  ```
+
+## react-router-dom
+
+### SPA与MAP
+|  | `SPA` single page application | `MAP` multi page application |
+| :---: | :--- | :--- |
+| `组织结构` | 一个主页面＋许多组件 | 许多完整的页面 |
+| `地址模式` | www.xxx.com/#/login | www.xxx.com/#/home |
+| `跳转方式` | 主页面不刷新，只是组件之间的切换「一个组件渲染/显示，一个组件销毀/隐藏」 | 从一个页面跳转到另外一个页面 |
+| `内容更新` | 只是相关组件的切换，即局部更新 | 整体HTML页面的切换，既全局刷新 |
+| `公共资源` | 公用资源只需要加载一次 | 公用资源需要重新加载 |
+| `操作体验` | 组件切换流畅、操作体验好，容易实现过渡动画 | 操作体验差、页面切换不流畅，实现不了过渡动画 |
+| `数据传递` | 方式很多「本地存储、全局变量、组件通信等等」 | 方法有限，可基于本地存储、URL问号传参等方案 |
+| `开发成本` | 需要基于特定的框架开发，维护起来非常方便 | 直接开发即可，但后期维护很麻烦 |
+| `搜索引擎` | 不利于SEO优化「可基于SSR服务器渲染解决」 | 可以直接做SEO优化 |
+| `适用场景` | 目前主流模式。对体验度和流畅度要求较高的 | 非主流模式，适用于对SEO要求较高的应用，例如：传统PC官网等 |
+
+### 路由的设计模式
+ 1. hash 路由
+   - 原理：每一次路由跳转，都是改变页面的hash值：并且监听hashchange事件，渲染不同的内容！
+   - 改变页面的哈希值（#/xxx），主页面是不会刷新的
+   - 根据不同的哈希值，让容器中渲染不同的内容「组件」
+  ```js
+    ` 
+      <nav class="nav-box">...</nav><div class="view-box'></div>
+    `
+    //荻取渲染内容的容器
+    const viewBox = document. queryselector(".view-box")
+    const navBox = document. queryselector(".nav-box")
+    // 点击A实现页面地址切换，但是不能刷新页面
+    navBox.onclick = function (ev){
+      let target = ev.target;
+      if (target. tagName === 'A'){
+        ev.preventDefault();// 阻止A标签页面跳转&刷新的默认行为
+        history.pushState((), "", target.href);
+        // 去路由匹配
+        routerMatch ();
+      }
+    }
+    //路由匹配的办法
+    const routerMatch = function routerMatch() {
+      let hash = location.hash.substring(1),
+      text = "";
+      routes. forEach(item => {
+        if (item.path === hash) {
+          text = item.component:
+        }
+      })
+      viewBox. innerHTML = text;
+    }
+    
+    // 默认展示首页
+    history.pushState({}, '', "/");
+    routerMatch ();
+
+    // 监听popstate地址变化事件，此事件：执行go/forward/back可以触发，但是执行pushState/repalceState等方法无法触发。
+    window.onpopstate = routerMatch;
+  ``` 
+2. history 路由
+   - 利用了H5中的HistoryAPI来实现页面地址的切换「可以不刷新页面」
+   - 问题：我们切换的地址，在页面不刷新的情况下是没有问题的，但是如果页面刷新，这个地址是不存在的，会报404错误！！此时我们需要服务器的配合：在地址不存在的情况下，也可以把主页面内容返回！！   
+  ```js
+    //荻取渲染内容的容器
+    const viewBox = document. queryselector('.view-box"）；
+    // 构建一个路由匹配表：每当我们重新加载页面、或者路由切换(切换哈希值)，都先到这个路由表中进行匹配；根据当前页面的哈希值，匹配出要渲染的内容（组件)！！
+    const routes = [{
+      path: '/',
+      component: '首页的内容'
+    },{
+      path: '/product',
+      component: '产品中心的内容'
+    },{
+      path: '/personal',
+      component: '个人中心的内容'
+    },]
+    //路由匹配的办法
+    const routerMatch = function routerMatch() {
+      let hash = location.hash.substring(1),
+      text = "";
+      routes. forEach(item => {
+        if (item.path === hash) {
+          text = item.component:
+        }
+      })
+      viewBox. innerHTML = text;
+    }
+    //一进来要展示的是首页的信息，所以默认改变一下HASH值
+    location.hash ='/';
+    routerMatch();
+    // 监测HASH值的变化，重新进行路由匹配
+    window. onhashchange = routerMatch;
+  ``` 
+
+###  react-router-dom v5
+11
+
+###  react-router-dom v6
+- 在react-router-dom V6版本中，移除了
+  - Switch
+  - Redirect 替代方案 Navigate
+  - withRouter 替代方案 自己写一个withRouter
+- 在react-router-dom V6中，即便当前组件是基于<Route>匹配渲染的，也不会基于属性，把history/location/match
+传递给组件！！想获取相关的信息，我们只能基于Hook函数处理！！
+  - 首先要确保，需要使用路由Hook的组件，是在Router 「HashRouter或BrowserRouter」内部包着的，否则使用这些
+  Hook会报错！！
+  - 只要在<Router>内部包裹的组件，不论是否是基于<Route>匹配渲染的
+    - 默认都不可能再基于props获取相关的对象信息了
+    - 只能基于“路由Hook"去获取！！
+- 为了在类组件中也可以获取路由的相关信息：
+  - 稍后我们构建路由表的时候，我们会想办法：继续让基于<Route>匹配渲染的组件，可以基于属性获取需要的信息
+  - 不是基于<Route>匹配渲染的组件，我们需要自己重写withRouter 「v6中干掉了这个API」，让其和基于<Route>匹配渲染的组件，具备相同的属性！！
+- 在react-router-dom v6中，实现路由跳转的方式：
+  - <Link/NavLink to="/a" /＞点击跳转路由
+  - <Navigate to=" /a" /＞遇到这个组件就会跳转
+  - 编程式导航
+    - 取消了history对象，基于navigate函数实现路由跳转
+    ```js
+      import { useNavigate } from ' react-router-dom’;
+      const navigate = useNavigate();
+      navigate('/c');
+      navigate('/c', { replace: true });
+      navigate({ pathname: '/c'})
+      // 问号传参
+      navigate({ pathname: '/c',search: '?id=100&name=zhufeng'  })
+      // 路径传参
+      navigate({ pathname: '/c/:id?/:name?',search: '?id=100&name=zhufeng'  })
+      // 隐式传参
+      navigate('/c',{
+        // 历史记录池替换现有地址
+        replace:true,
+        // 隐式传参信息
+        state:{
+          id: 100,
+          name: '珠峰'
+        }
+      })
+    ```
+    ```js
+      // 问号传参接收------
+      // 方案一
+      import { useLocation } from ' react-router-dom’;
+      const location = useLocation();
+      // location.search:"?id=100&name=zhufeng"
+      const usp = new URLSearchParams (location. search) ;
+      console.log(usp.get ('id'), usp.get ('name'));  
+      // 方案二  
+      import { useSearchParams } from ' react-router-dom’;
+      let [usp] = useSearchParams();
+      console.log(usp.get ('id'), usp.get ('name'));  
+      // 路径传参接收------
+      import { useParams } from ' react-router-dom’;
+      let params = useParams();
+      console.log(params); 
+        //=>{id: 100, name: 'zhufeng')
+      // 隐式传参接收------
+      import { useLocation } from ' react-router-dom’;
+      const location = useLocation();
+      console.log(location.state);  
+    ```
+
+#### 在react-router-dom v6中，常用的路由Hook
+- useNaviqate-＞代替5中的 useHistory：实现编程式导航
+- useLocation「5中也有」：获取location对象信息 pathname/search/state...
+- useSearchParams「新增的」：获取问号传参信息，取到的结果是一个URLSearchParams对像
+- useParams 「5中也有」：获取路径参数匹配的信息
+- useMatch(pathname)一＞代替5中的 usoRouteMatch 「5中的这个Hook有用，可以基于params获取路径参数匹配的信息，但是在6中，这个Hook需要我们自己传递地址，而且params中也没有获取匹配的信息，用的就比较少了
+#### 获取路由信息
+- 函数组件＆ 基于Aoute匹配渲染的：可以基于props获取路由信息、也可以自己使用Hook函致获取
+- 类组件＆ 基于Route匹配渲染的：只能基手屬性获取，或者使用withRouter「自己写的」
+- 函数组件＆ 不是Route匹配的：可以基于Hook自己处理、也可以使用withRouter
+- 类组件＆ 不是Route匹配的：只使用withRouter「自己写的」
+> 都需要放在<HashRouter> 内部
