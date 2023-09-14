@@ -3,7 +3,7 @@
  * @Author: zcc
  * @LastEditors: zcc
  * @Date: 2023-02-14 10:06:25
- * @LastEditTime: 2023-06-16 15:46:47
+ * @LastEditTime: 2023-09-13 20:39:36
 -->
 
 # Getting Started with Create React App
@@ -1460,8 +1460,41 @@ const Demo = function Demo(props) {
 
 ## redux
 
+- 复合组件通信：
+  - 父子组件[具备相同的父亲的兄弟组件]：props属性[基于ref]
+  - 祖先和后代[具备相同祖先的平行组件]：context上下文
+
+
 ### 基础
 
+1. 创建全局的公共容器，用来存储各个组件需要的公共信息 
+  1. 在创建的store容器中，存储两部分内容
+    - 公共状态：各个组件组要共享/通信的信息
+    - 事件池：存放组件可以更新的方法
+    - 特点：当公共状态一旦发生改变，会默认立即通知时间池中的方法执行，让指定组件更新，组件更新就会拿到最新的公共状态信息进行渲染。
+  2. 修改公共容器中的状态，不能去修改？
+    - 基于dispatch派发，通知reducer执行
+    - 在reducer中去实现状态的更新
+2. 在组件内部获取公用状态信息，然后渲染 store.getState()
+3. 把让组件可以更新的方法放在公共容器的事件池中
+  - 后期状态改变了，事件池中的方法会按照顺序，依次执行，让对应组件更新，组件更新就会拿到最新的公共状态信息进行渲染。 
+  - store.subscribe(函数)
+4. 创建容器的时候需要传递reducer 
+5. 派发任务，通知reducer执行修改状态 store.dispatch({type:xxx,...})
+```js
+  // 1
+  const store = createState([reducer]) // 创建
+  // 4
+  let initial = {...} //初始的状态值
+  const reducer = function reducer(state= initial,action){
+    // state 容器中的状态
+    // action 派发的行为对象，必须具备type属性
+    switch(action.type){
+      // 根据传递的type值的不同，修改不同状态信息
+    }
+    return state; // 返回的信息会替换store容器中的公共状态
+  }
+```
 ### redux工程化
 
 > 把状态和reducer的管理，按照模块进行划分
@@ -1863,3 +1896,58 @@ connect(mapStateToProps,mapDispatchToProps)(渲染的组件)
 - 函数组件＆ 不是Route匹配的：可以基于Hook自己处理、也可以使用withRouter
 - 类组件＆ 不是Route匹配的：只使用withRouter「自己写的」
 > 都需要放在<HashRouter> 内部
+
+
+
+## 移动端
+### 移动端响应式布局开发
+- 一定要设置的 <meta name="viewport" content="width=device-width , initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+  - width=device-width HTML的濱染宽度和设各宽度保特一致
+  - initial-scale=1.0 初始縮放比例：既不放大也不缩小
+  - maximum-scale=1.0 最大缩放比例
+  - minimum-scale=1.0 最小缩放比例
+  - user-scalable=no 是否与许用户手动缩放
+- 如果不设置，浏览器会按照980的宽度渲染页面：手机宽度不足9B0，整个页面就会整体缩小！！
+### 实现响应式布局开发步骤
+- 找参照的比例（例如设计稿的比例 一＞一般都是750px），在这个比例下，基于html.fontsize一个初始值
+  - html {font-size: 100px;}
+  - 1/ 750Px的设计稿中，1REM=100PX
+  - 未来我们需要把从设计稿中测量出来的尺寸 (Px单位）转换为REM单位去设置样式
+- 我们需要根据当前设备的宽度，计算相对于设计稿750来讲，缩放的比例；从而让REM的转换比例，也跟着缩放「REM和PX的换算比例一改，则所有之前以REM为单位的样式也会跟着缩放」
+### 计算当前设备下，REM和PX的换算比例
+```js
+  (function(){
+    const computed = () => {
+      let html = document.documentElement,
+          deviceW = html.clientWidth,
+          designW = 750;
+          if(designW>=designW){
+            html.style.fontSize = ratio + 'px'
+            return;
+          }
+      let ratio = deviceW * 100 / designW
+      html.style.fontSize = ratio + 'px'
+    }
+    computed();
+    window.addEventListener('resize',computed)
+  })
+```
+### 相关依赖
+- 1ib-flexible 设置REM和PX换算比例的
+  - 根据设备宽度的变化自动计算
+  - html.style.fontsize=设备的宽度/10+'px’;
+  - 750设计稿中 1REM=75PX：初始换算比例
+  - 375设备上 1REM=37.5Px
+- postcss-pxtorem 
+  - 可以把我们写的PX单位，按照当时的换算比例，自动转换为REM，不需要我们自己算了
+  - 井且不需要手动转换为REM「我们在  webpack中，针对postcss-pxtorem做配置，让插件帮我们自动转换」
+  ```js
+    // 导入插件
+    const px2rem = require('postcss-pxtorem');
+
+    px2rem({
+      rootValue: 75,
+      propList:['*'] // 哪些文件生效；所有文件生效
+    })
+  ```
+  ![postcss-pxtorem在webpack中的位置](./readmeIMG/postcss-pxtorem.png) 
